@@ -55,17 +55,11 @@ const MethodQuestionScreen = ({ navigation, route }) => {
   };
 
   const handleFinish = () => {
-    // Here you would typically send the data to your backend
-    // For now, we'll just show a completion message
-    console.log('User selections:', {
+    navigation.navigate('GearRecommendation', {
       species: selectedSpecies,
-      hasGear,
-      answers
+      method: answers.location || 'Shore Fishing',
+      gearOwned: hasGear,
     });
-    
-    // Navigate to a results screen or show recommendations
-    // For now, we'll go back to the welcome screen
-    navigation.navigate('Welcome');
   };
 
   const currentQ = questions[currentQuestion];

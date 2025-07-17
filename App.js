@@ -8,6 +8,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import SpeciesSelectorScreen from './src/screens/SpeciesSelectorScreen';
 import GearOwnershipScreen from './src/screens/GearOwnershipScreen';
 import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
+import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
 
 const Stack = createStackNavigator();
 
@@ -26,6 +27,7 @@ export default function App() {
         <Stack.Screen name="SpeciesSelector" component={SpeciesSelectorScreen} />
         <Stack.Screen name="GearOwnership" component={GearOwnershipScreen} />
         <Stack.Screen name="MethodQuestion" component={MethodQuestionScreen} />
+        <Stack.Screen name="GearRecommendation" component={GearRecommendationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

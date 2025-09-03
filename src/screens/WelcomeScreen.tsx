@@ -2,12 +2,20 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const WelcomeScreen = ({ navigation }) => {
+type Navigation = {
+  navigate: (screen: string, params?: unknown) => void;
+};
+
+interface Props {
+  navigation: Navigation;
+}
+
+const WelcomeScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="fish" size={80} color="#2563eb" />
+          <Ionicons name={"fish" as any} size={80} color="#2563eb" />
         </View>
         
         <Text style={styles.title}>Welcome to BaitMate</Text>
@@ -24,7 +32,7 @@ const WelcomeScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('SpeciesSelector')}
         >
           <Text style={styles.buttonText}>Get Started</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
+          <Ionicons name={"arrow-forward" as any} size={20} color="white" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

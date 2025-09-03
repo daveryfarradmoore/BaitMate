@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const MethodQuestionScreen = ({ navigation, route }) => {
+type Navigation = { navigate: (screen: string, params?: unknown) => void };
+type Route = { params: { selectedSpecies?: { name?: string }; hasGear?: boolean } };
+
+interface Props { navigation: Navigation; route: Route }
+
+const MethodQuestionScreen = ({ navigation, route }: Props) => {
   const { selectedSpecies, hasGear } = route.params;
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const questions = [
+  const questions: { id: string; question: string; options: { id: string; text: string; icon: string }[] }[] = [
     {
       id: 'location',
       question: 'Where will you be fishing?',
@@ -38,7 +43,7 @@ const MethodQuestionScreen = ({ navigation, route }) => {
     }
   ];
 
-  const handleAnswerSelect = (questionId, answerId) => {
+  const handleAnswerSelect = (questionId: string, answerId: string) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: answerId
@@ -62,7 +67,7 @@ const MethodQuestionScreen = ({ navigation, route }) => {
     });
   };
 
-  const currentQ = questions[currentQuestion];
+  const currentQ = questions[currentQuestion]!;
   const hasAnswered = answers[currentQ.id];
 
   return (
@@ -101,7 +106,7 @@ const MethodQuestionScreen = ({ navigation, route }) => {
             >
               <View style={styles.optionContent}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name={option.icon} size={24} color="#6b7280" />
+                  <Ionicons name={option.icon as any} size={24} color="#6b7280" />
                 </View>
                 <Text style={styles.optionText}>{option.text}</Text>
               </View>

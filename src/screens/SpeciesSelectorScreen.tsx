@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const speciesData = [
+type Species = { id: string; name: string; icon: string; color: string };
+
+const speciesData: Species[] = [
   { id: 'salmon', name: 'Salmon', icon: 'fish', color: '#dc2626' },
   { id: 'bass', name: 'Bass', icon: 'fish', color: '#059669' },
   { id: 'catfish', name: 'Catfish', icon: 'fish', color: '#7c3aed' },
@@ -11,10 +13,14 @@ const speciesData = [
   { id: 'walleye', name: 'Walleye', icon: 'fish', color: '#be185d' },
 ];
 
-const SpeciesSelectorScreen = ({ navigation }) => {
-  const [selectedSpecies, setSelectedSpecies] = useState(null);
+type Navigation = { navigate: (screen: string, params?: unknown) => void };
 
-  const handleSpeciesSelect = (species) => {
+interface Props { navigation: Navigation }
+
+const SpeciesSelectorScreen = ({ navigation }: Props) => {
+  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
+
+  const handleSpeciesSelect = (species: Species) => {
     setSelectedSpecies(species);
   };
 
@@ -43,7 +49,7 @@ const SpeciesSelectorScreen = ({ navigation }) => {
               onPress={() => handleSpeciesSelect(species)}
             >
               <View style={[styles.iconContainer, { backgroundColor: species.color }]}>
-                <Ionicons name={species.icon} size={32} color="white" />
+                <Ionicons name={species.icon as any} size={32} color="white" />
               </View>
               <Text style={styles.speciesName}>{species.name}</Text>
               {selectedSpecies?.id === species.id && (
@@ -66,7 +72,7 @@ const SpeciesSelectorScreen = ({ navigation }) => {
           disabled={!selectedSpecies}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
+          <Ionicons name={"arrow-forward" as any} size={20} color="white" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

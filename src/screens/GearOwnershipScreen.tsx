@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const GearOwnershipScreen = ({ navigation, route }) => {
-  const { selectedSpecies } = route.params;
-  const [hasGear, setHasGear] = useState(null);
+type Navigation = { navigate: (screen: string, params?: unknown) => void };
+type Route = { params: { selectedSpecies?: { name?: string } } };
 
-  const handleGearSelection = (hasGear) => {
-    setHasGear(hasGear);
+interface Props { navigation: Navigation; route: Route }
+
+const GearOwnershipScreen = ({ navigation, route }: Props) => {
+  const { selectedSpecies } = route.params;
+  const [hasGear, setHasGear] = useState<boolean | null>(null);
+
+  const handleGearSelection = (hasGearValue: boolean) => {
+    setHasGear(hasGearValue);
   };
 
   const handleContinue = () => {
@@ -48,7 +53,7 @@ const GearOwnershipScreen = ({ navigation, route }) => {
             onPress={() => handleGearSelection(true)}
           >
             <View style={styles.iconContainer}>
-              <Ionicons name="checkmark-circle" size={48} color="#059669" />
+              <Ionicons name={"checkmark-circle" as any} size={48} color="#059669" />
             </View>
             <Text style={styles.optionTitle}>Yes, I have gear</Text>
             <Text style={styles.optionDescription}>
@@ -64,7 +69,7 @@ const GearOwnershipScreen = ({ navigation, route }) => {
             onPress={() => handleGearSelection(false)}
           >
             <View style={styles.iconContainer}>
-              <Ionicons name="add-circle" size={48} color="#dc2626" />
+              <Ionicons name={"add-circle" as any} size={48} color="#dc2626" />
             </View>
             <Text style={styles.optionTitle}>No, I need gear</Text>
             <Text style={styles.optionDescription}>
@@ -82,7 +87,7 @@ const GearOwnershipScreen = ({ navigation, route }) => {
           disabled={hasGear === null}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
+          <Ionicons name={"arrow-forward" as any} size={20} color="white" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -10,9 +10,27 @@ import GearOwnershipScreen from './src/screens/GearOwnershipScreen';
 import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
 import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
 
-const Stack = createStackNavigator();
+// Type definitions for navigation
+export type RootStackParamList = {
+  Welcome: undefined;
+  SpeciesSelector: undefined;
+  GearOwnership: {
+    species?: string | { name: string };
+  };
+  MethodQuestion: {
+    species?: string | { name: string };
+    gearOwned?: boolean | string[];
+  };
+  GearRecommendation: {
+    species?: string | { name: string };
+    method?: string | { text: string };
+    gearOwned?: boolean | string[];
+  };
+};
 
-export default function App() {
+const Stack = createStackNavigator<RootStackParamList>();
+
+const App: React.FC = () => {
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
@@ -31,4 +49,6 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-} 
+};
+
+export default App;

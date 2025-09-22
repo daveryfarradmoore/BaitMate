@@ -256,12 +256,15 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
   // Filter gear by toggle and species
   const recommendedGear = useMemo<(GearItem & { group: string })[]>(() => {
     const speciesGear = getGearForSpecies(displaySpecies);
+    const ownedGroups: string[] = Array.isArray(normalizedGearOwned) ? (normalizedGearOwned as string[]) : [];
     return Object.entries(speciesGear).flatMap(([group, items]) => {
+      // If user owns this group, skip recommending an item for it
+      if (ownedGroups.includes(group)) return [] as (GearItem & { group: string })[];
       if (!items || items.length === 0) return [] as (GearItem & { group: string })[];
       const item: GearItem = (items.find(i => i.tag === toggle) ?? items[0]) as GearItem;
       return [{ ...item, group }];
     });
-  }, [toggle, displaySpecies]);
+  }, [toggle, displaySpecies, normalizedGearOwned]);
 
   // Calculate total price
   const totalPrice = useMemo(() => {
@@ -319,8 +322,9 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         data={recommendedGear}
         renderItem={renderGearCard}
         keyExtractor={item => item.name}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
+        style={styles.listContainer}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
       />
       {/* Sticky Footer */}
       <View style={styles.footer}>
@@ -460,7 +464,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  listContainer: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 120,
+    paddingTop: 10,
+  },
 });
 
 export default GearRecommendationScreen;
+
+
+
+
+
 

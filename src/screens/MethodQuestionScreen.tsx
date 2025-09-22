@@ -3,12 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } fr
 import { Ionicons } from '@expo/vector-icons';
 
 type Navigation = { navigate: (screen: string, params?: unknown) => void };
-type Route = { params: { selectedSpecies?: { name?: string }; hasGear?: boolean } };
+type Route = { params: { selectedSpecies?: { name?: string }; hasGear?: boolean; ownedGroups?: string[] } };
 
 interface Props { navigation: Navigation; route: Route }
 
 const MethodQuestionScreen = ({ navigation, route }: Props) => {
-  const { selectedSpecies, hasGear } = route.params;
+  const { selectedSpecies, hasGear, ownedGroups } = route.params;
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -63,7 +63,7 @@ const MethodQuestionScreen = ({ navigation, route }: Props) => {
     navigation.navigate('GearRecommendation', {
       species: selectedSpecies,
       method: answers.location || 'Shore Fishing',
-      gearOwned: hasGear,
+      gearOwned: ownedGroups && ownedGroups.length > 0 ? ownedGroups : hasGear,
     });
   };
 

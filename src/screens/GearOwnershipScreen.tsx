@@ -18,18 +18,11 @@ const GearOwnershipScreen = ({ navigation, route }: Props) => {
   const handleContinue = () => {
     if (hasGear !== null) {
       if (hasGear) {
-        // User has gear - could navigate to a gear recommendation screen
-        // For now, we'll go to method questions
-        navigation.navigate('MethodQuestion', { 
-          selectedSpecies, 
-          hasGear 
-        });
+        // User has gear - select which groups they own
+        navigation.navigate('OwnedGearSelection', { selectedSpecies });
       } else {
         // User needs gear - go to method questions for recommendations
-        navigation.navigate('MethodQuestion', { 
-          selectedSpecies, 
-          hasGear 
-        });
+        navigation.navigate('MethodQuestion', { selectedSpecies, hasGear });
       }
     }
   };

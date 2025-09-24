@@ -1,49 +1,85 @@
-import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { StatusBar } from 'expo-status-bar';
-
+import { createStackNavigator, StackNavigationProp as RNStackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import SpeciesSelectorScreen from './src/screens/SpeciesSelectorScreen';
 import GearOwnershipScreen from './src/screens/GearOwnershipScreen';
-import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
 import OwnedGearSelectionScreen from './src/screens/OwnedGearSelectionScreen';
+import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
 import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
 
+// Define the Species type
+export type Species = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+};
+
+// Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
-  SpeciesSelector: { selectedSpecies?: { name: string } } | undefined;
-  GearOwnership: { selectedSpecies?: { name: string } } | undefined;
-  OwnedGearSelection: { selectedSpecies?: { name: string } } | undefined;
-  MethodQuestion: { selectedSpecies?: { name: string }; hasGear?: boolean; ownedGroups?: string[] } | undefined;
-  GearRecommendation: {
-    species?: string | { name: string };
-    method?: string | { text: string };
-    gearOwned?: boolean | string[];
-  } | undefined;
+  SpeciesSelector: undefined;
+  GearOwnership: { selectedSpecies: Species };
+  OwnedGearSelection: { selectedSpecies: Species; hasGear: boolean };
+  MethodQuestion: { selectedSpecies: Species; hasGear: boolean; ownedGear: string[] };
+  GearRecommendation: { selectedSpecies: Species; hasGear: boolean; ownedGear: string[]; method: string };
 };
+
+export type StackNavigationProp = RNStackNavigationProp<RootStackParamList>;
+export type StackRouteProp<T extends keyof RootStackParamList> = RouteProp<RootStackParamList, T>;
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-export default function App() {
+const App = () => {
   return (
     <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator
+      <Stack.Navigator 
         initialRouteName="Welcome"
         screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#f8f9fa' }
+          headerStyle: {
+            backgroundColor: '#2563eb',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
         }}
       >
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="SpeciesSelector" component={SpeciesSelectorScreen} />
-        <Stack.Screen name="GearOwnership" component={GearOwnershipScreen} />
-        <Stack.Screen name="OwnedGearSelection" component={OwnedGearSelectionScreen} />
-        <Stack.Screen name="MethodQuestion" component={MethodQuestionScreen} />
-        <Stack.Screen name="GearRecommendation" component={GearRecommendationScreen} />
+        <Stack.Screen 
+          name="Welcome" 
+          component={WelcomeScreen} 
+          options={{ title: 'BaitMate' }}
+        />
+        <Stack.Screen 
+          name="SpeciesSelector" 
+          component={SpeciesSelectorScreen} 
+          options={{ title: 'Select Species' }}
+        />
+        <Stack.Screen 
+          name="GearOwnership" 
+          component={GearOwnershipScreen} 
+          options={{ title: 'Gear Ownership' }}
+        />
+        <Stack.Screen 
+          name="OwnedGearSelection" 
+          component={OwnedGearSelectionScreen} 
+          options={{ title: 'Select Owned Gear' }}
+        />
+        <Stack.Screen 
+          name="MethodQuestion" 
+          component={MethodQuestionScreen} 
+          options={{ title: 'Fishing Method' }}
+        />
+        <Stack.Screen 
+          name="GearRecommendation" 
+          component={GearRecommendationScreen} 
+          options={{ title: 'Recommendations' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
+
+export default App;

@@ -1,32 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { StackNavigationProp, StackRouteProp } from '../../App';
 
 type Species = { id: string; name: string; icon: string; color: string };
 
 const speciesData: Species[] = [
-  { id: 'salmon', name: 'Salmon', icon: 'fish', color: '#dc2626' },
-  { id: 'bass', name: 'Bass', icon: 'fish', color: '#059669' },
-  { id: 'catfish', name: 'Catfish', icon: 'fish', color: '#7c3aed' },
-  { id: 'trout', name: 'Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'atlantic-salmon', name: 'Atlantic Salmon', icon: 'fish', color: '#dc2626' },
+  { id: 'largemouth-bass', name: 'Bass - Largemouth', icon: 'fish', color: '#059669' },
+  { id: 'smallmouth-bass', name: 'Bass - Smallmouth', icon: 'fish', color: '#059669' },
   { id: 'bluegill', name: 'Bluegill', icon: 'fish', color: '#ea580c' },
+  { id: 'brook-trout', name: 'Brook Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'brown-trout', name: 'Brown Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'bullheads', name: 'Bullheads', icon: 'fish', color: '#7c3aed' },
+  { id: 'channel-catfish', name: 'Channel Catfish', icon: 'fish', color: '#7c3aed' },
+  { id: 'chinook-salmon', name: 'Chinook Salmon', icon: 'fish', color: '#dc2626' },
+  { id: 'coho-salmon', name: 'Coho Salmon', icon: 'fish', color: '#dc2626' },
+  { id: 'common-carp', name: 'Common Carp and Suckers', icon: 'fish', color: '#6b7280' },
+  { id: 'crappie', name: 'Crappie', icon: 'fish', color: '#8b5cf6' },
+  { id: 'flathead-catfish', name: 'Flathead Catfish', icon: 'fish', color: '#7c3aed' },
+  { id: 'lake-sturgeon', name: 'Lake Sturgeon', icon: 'fish', color: '#374151' },
+  { id: 'lake-trout', name: 'Lake Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'menominee', name: 'Menominee', icon: 'fish', color: '#f59e0b' },
+  { id: 'muskellunge', name: 'Muskellunge', icon: 'fish', color: '#10b981' },
+  { id: 'northern-pike', name: 'Northern Pike', icon: 'fish', color: '#10b981' },
+  { id: 'pink-salmon', name: 'Pink Salmon', icon: 'fish', color: '#dc2626' },
+  { id: 'pumpkinseed', name: 'Pumpkinseed', icon: 'fish', color: '#ea580c' },
+  { id: 'rainbow-trout', name: 'Rainbow Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'rock-bass', name: 'Rock Bass', icon: 'fish', color: '#059669' },
+  { id: 'smelt', name: 'Smelt', icon: 'fish', color: '#6b7280' },
+  { id: 'steelhead-trout', name: 'Steelhead Trout', icon: 'fish', color: '#0891b2' },
+  { id: 'redear-sunfish', name: 'Redear Sunfish', icon: 'fish', color: '#ea580c' },
   { id: 'walleye', name: 'Walleye', icon: 'fish', color: '#be185d' },
+  { id: 'white-bass', name: 'White Bass', icon: 'fish', color: '#059669' },
+  { id: 'whitefish', name: 'Whitefish', icon: 'fish', color: '#6b7280' },
+  { id: 'yellow-perch', name: 'Yellow Perch', icon: 'fish', color: '#f59e0b' },
 ];
 
-type Navigation = { navigate: (screen: string, params?: unknown) => void };
-
-interface Props { navigation: Navigation }
+type Props = {
+  navigation: StackNavigationProp;
+  route: StackRouteProp<'SpeciesSelector'>;
+};
 
 const SpeciesSelectorScreen = ({ navigation }: Props) => {
-  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
-
-  const handleSpeciesSelect = (species: Species) => {
-    setSelectedSpecies(species);
-  };
+  const [selectedSpecies, setSelectedSpecies] = useState<string>("");
 
   const handleContinue = () => {
     if (selectedSpecies) {
-      navigation.navigate('GearOwnership', { selectedSpecies });
+      const species = speciesData.find(s => s.id === selectedSpecies);
+      if (species) {
+        navigation.navigate('GearOwnership', { selectedSpecies: species });
+      }
     }
   };
 
@@ -37,30 +62,23 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
         <Text style={styles.subtitle}>Select your target species</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.grid}>
+      <View style={styles.dropdownWrapper}>
+        <Ionicons name="water" size={20} color="#2563eb" style={styles.dropdownIcon} />
+        <Picker
+          selectedValue={selectedSpecies}
+          onValueChange={(itemValue: string) => setSelectedSpecies(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="-- Select Species --" value="" />
           {speciesData.map((species) => (
-            <TouchableOpacity
-              key={species.id}
-              style={[
-                styles.speciesCard,
-                selectedSpecies?.id === species.id && styles.selectedCard,
-              ]}
-              onPress={() => handleSpeciesSelect(species)}
-            >
-              <View style={[styles.iconContainer, { backgroundColor: species.color }]}>
-                <Ionicons name={species.icon as any} size={32} color="white" />
-              </View>
-              <Text style={styles.speciesName}>{species.name}</Text>
-              {selectedSpecies?.id === species.id && (
-                <View style={styles.checkmark}>
-                  <Ionicons name="checkmark-circle" size={24} color="#2563eb" />
-                </View>
-              )}
-            </TouchableOpacity>
+            <Picker.Item 
+              key={species.id} 
+              label={species.name} 
+              value={species.id} 
+            />
           ))}
-        </View>
-      </ScrollView>
+        </Picker>
+      </View>
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -72,7 +90,7 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
           disabled={!selectedSpecies}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
-          <Ionicons name={"arrow-forward" as any} size={20} color="white" />
+          <Ionicons name={"arrow-forward"} size={20} color="white" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -80,78 +98,26 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 24,
-  },
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 8,
+    fontSize: 28, fontWeight: 'bold', color: '#1f2937',
+    textAlign: 'center', marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  grid: {
+  subtitle: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
+  dropdownWrapper: {
+    marginHorizontal: 24,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 12,
+    overflow: 'hidden',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-  },
-  speciesCard: {
-    width: '48%',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    position: 'relative',
+    paddingRight: 12,
   },
-  selectedCard: {
-    borderWidth: 2,
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  speciesName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  checkmark: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
+  dropdownIcon: { marginLeft: 12 },
+  picker: { flex: 1, height: 50 },
   footer: {
     paddingHorizontal: 24,
     paddingVertical: 20,
@@ -168,15 +134,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  disabledButton: {
-    backgroundColor: '#9ca3af',
-  },
+  disabledButton: { backgroundColor: '#9ca3af' },
   continueButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 8,
+    color: 'white', fontSize: 18, fontWeight: '600', marginRight: 8,
   },
 });
 
-export default SpeciesSelectorScreen; 
+export default SpeciesSelectorScreen;

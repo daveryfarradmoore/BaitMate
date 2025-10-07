@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Modal, FlatList, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { StackNavigationProp, StackRouteProp } from '../../App';
 
 type Species = { id: string; name: string; icon: string; color: string };
 
 const speciesData: Species[] = [
   { id: 'atlantic-salmon', name: 'Atlantic Salmon', icon: 'fish', color: '#dc2626' },
-  { id: 'largemouth-bass', name: 'Bass - Largemouth', icon: 'fish', color: '#059669' },
-  { id: 'smallmouth-bass', name: 'Bass - Smallmouth', icon: 'fish', color: '#059669' },
+  { id: 'largemouth-bass', name: 'Largemouth Bass', icon: 'fish', color: '#059669' },
+  { id: 'smallmouth-bass', name: 'Smallmouth Bass', icon: 'fish', color: '#059669' },
   { id: 'bluegill', name: 'Bluegill', icon: 'fish', color: '#ea580c' },
   { id: 'brook-trout', name: 'Brook Trout', icon: 'fish', color: '#0891b2' },
   { id: 'brown-trout', name: 'Brown Trout', icon: 'fish', color: '#0891b2' },
@@ -45,6 +44,7 @@ type Props = {
 
 const SpeciesSelectorScreen = ({ navigation }: Props) => {
   const [selectedSpecies, setSelectedSpecies] = useState<string>("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleContinue = () => {
     if (selectedSpecies) {
@@ -55,6 +55,13 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
     }
   };
 
+  const handleSpeciesSelect = (speciesId: string) => {
+    setSelectedSpecies(speciesId);
+    setIsModalVisible(false);
+  };
+
+  const selectedSpeciesData = speciesData.find(s => s.id === selectedSpecies);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -62,23 +69,16 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
         <Text style={styles.subtitle}>Select your target species</Text>
       </View>
 
-      <View style={styles.dropdownWrapper}>
+      <TouchableOpacity 
+        style={styles.dropdownWrapper}
+        onPress={() => setIsModalVisible(true)}
+      >
         <Ionicons name="water" size={20} color="#2563eb" style={styles.dropdownIcon} />
-        <Picker
-          selectedValue={selectedSpecies}
-          onValueChange={(itemValue: string) => setSelectedSpecies(itemValue)}
-          style={styles.picker}
-        >
-          <Picker.Item label="-- Select Species --" value="" />
-          {speciesData.map((species) => (
-            <Picker.Item 
-              key={species.id} 
-              label={species.name} 
-              value={species.id} 
-            />
-          ))}
-        </Picker>
-      </View>
+        <Text style={styles.dropdownText}>
+          {selectedSpeciesData ? selectedSpeciesData.name : "-- Select Species --"}
+        </Text>
+        <Ionicons name="chevron-down" size={20} color="#6b7280" style={styles.chevronIcon} />
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -93,6 +93,54 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
           <Ionicons name={"arrow-forward"} size={20} color="white" />
         </TouchableOpacity>
       </View>
+
+      {/* Species Selection Modal */}
+      <Modal
+        visible={isModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Species</Text>
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={speciesData}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.speciesItem,
+                    selectedSpecies === item.id && styles.selectedSpeciesItem
+                  ]}
+                  onPress={() => handleSpeciesSelect(item.id)}
+                >
+                  <View style={[styles.speciesColor, { backgroundColor: item.color }]} />
+                  <Text style={[
+                    styles.speciesName,
+                    selectedSpecies === item.id && styles.selectedSpeciesName
+                  ]}>
+                    {item.name}
+                  </Text>
+                  {selectedSpecies === item.id && (
+                    <Ionicons name="checkmark" size={20} color="#2563eb" />
+                  )}
+                </TouchableOpacity>
+              )}
+              style={styles.speciesList}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -111,13 +159,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 12,
-    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 15,
+    backgroundColor: 'white',
   },
-  dropdownIcon: { marginLeft: 12 },
-  picker: { flex: 1, height: 50 },
+  dropdownIcon: { marginRight: 12 },
+  dropdownText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  chevronIcon: { marginLeft: 8 },
   footer: {
     paddingHorizontal: 24,
     paddingVertical: 20,
@@ -137,6 +191,65 @@ const styles = StyleSheet.create({
   disabledButton: { backgroundColor: '#9ca3af' },
   continueButtonText: {
     color: 'white', fontSize: 18, fontWeight: '600', marginRight: 8,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    minHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  speciesList: {
+    flex: 1,
+  },
+  speciesItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  selectedSpeciesItem: {
+    backgroundColor: '#eff6ff',
+  },
+  speciesColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  speciesName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  selectedSpeciesName: {
+    color: '#2563eb',
+    fontWeight: '600',
   },
 });
 

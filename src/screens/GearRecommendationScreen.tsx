@@ -11,7 +11,7 @@ interface GearItem {
   name: string;
   description: string;
   price: number;
-  tag: 'Cheapest' | 'Best Value';
+  tag: 'Value Items' | 'Premium' | 'Best Value' | 'Cheapest';
   image: string;
 }
 
@@ -43,82 +43,103 @@ interface Props {
 
 // Species-specific gear data
 const speciesGearData: SpeciesGearData = {
-  'Bass': {
+  'Largemouth Bass': {
     Rod: [
-      { name: 'Bass Pro Spinning Rod', description: 'Medium-heavy action, perfect for bass fishing with lures.', price: 89.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Budget Bass Rod', description: 'Affordable 6\'6" medium action rod for beginners.', price: 39.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Medium-Heavy Spinning Rod 7\'', description: 'Perfect for jigs, soft plastics, and crankbaits.', price: 89.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Medium-Heavy Baitcasting Rod 7\'', description: 'Ideal for flipping, pitching, and heavy cover fishing.', price: 129.99, tag: 'Premium', image: placeholderImg },
     ],
     Reel: [
-      { name: 'Bass Master Spinning Reel', description: 'Smooth drag system, ideal for bass fishing techniques.', price: 79.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Entry Bass Reel', description: 'Reliable spinning reel for bass fishing.', price: 29.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Spinning Reel 3000-4000', description: 'Smooth drag system for bass fishing techniques.', price: 79.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Baitcasting Reel 3000-4000', description: 'High-performance reel with precise casting control.', price: 149.99, tag: 'Premium', image: placeholderImg },
     ],
     Line: [
-      { name: 'Bass Braid 20lb', description: 'High-strength braided line for heavy bass fishing.', price: 24.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Bass Mono 12lb', description: 'Standard monofilament for bass fishing.', price: 8.99, tag: 'Cheapest', image: placeholderImg },
-    ],
-    Hooks: [
-      { name: 'Bass Hook Set', description: 'Assorted sizes 2/0 to 5/0 for various bass lures.', price: 12.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Basic Bass Hooks', description: 'Standard bass hooks in popular sizes.', price: 4.99, tag: 'Cheapest', image: placeholderImg },
-    ],
-    Bait: [
-      { name: 'Soft Plastic Worms', description: 'Realistic worms in natural colors for bass.', price: 9.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Live Nightcrawlers', description: 'Classic live bait for bass fishing.', price: 3.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Braided Line 20-30lb + Fluorocarbon Leader 10-12lb', description: 'High-strength braid with invisible leader for clear water.', price: 34.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Braided Line + Fluorocarbon Leader', description: 'Top-tier line system for tournament fishing.', price: 59.99, tag: 'Premium', image: placeholderImg },
     ],
     Lures: [
-      { name: 'Bass Crankbait Set', description: 'Diving crankbaits in bass-attracting colors.', price: 19.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Spinnerbait', description: 'Effective spinnerbait for bass in various conditions.', price: 7.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Jigs 3/8-1/2 oz Set', description: 'Flipping, pitching, and swim jigs in various colors.', price: 24.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Soft Plastics Variety Pack', description: 'Worms, craws, swimbaits, and creature baits.', price: 19.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Crankbaits Shallow Divers', description: 'Craw and shad colored shallow diving crankbaits.', price: 16.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Topwater Lures Set', description: 'Frogs, poppers, and walking baits for surface action.', price: 29.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Terminal: [
+      { name: 'Terminal Tackle Kit', description: 'Hooks, weights, and bobbers for finesse and live bait.', price: 14.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Terminal Kit', description: 'High-quality hooks and weights for all techniques.', price: 24.99, tag: 'Premium', image: placeholderImg },
+    ]
+  },
+  'Smallmouth Bass': {
+    Rod: [
+      { name: 'Medium Spinning Rod 6\'6"-7\'', description: 'Perfect for tubes, swimbaits, and finesse techniques.', price: 79.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Medium Spinning Rod', description: 'High-sensitivity rod for detecting subtle bites.', price: 149.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Reel: [
+      { name: 'Spinning Reel 2500-3000', description: 'Lightweight reel perfect for smallmouth techniques.', price: 69.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Spinning Reel', description: 'Ultra-smooth drag and precision casting.', price: 129.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Line: [
+      { name: 'Braided Line 15-20lb + Fluorocarbon Leader 8-12lb', description: 'Light braid with fluorocarbon leader for clear water.', price: 28.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Braided Line + Fluorocarbon Leader', description: 'Top-quality line system for finesse fishing.', price: 49.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Lures: [
+      { name: 'Tubes 3-4" Natural Colors', description: 'Green pumpkin and smoke colored tubes for smallmouth.', price: 12.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Swimbaits 2-4" Shad/Perch', description: 'Realistic swimbaits in shad and perch patterns.', price: 18.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Finesse Jigs 1/8-3/8 oz', description: 'Hair and finesse jigs for smallmouth bass.', price: 14.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Inline Spinners Mepps/Rooster Tail', description: 'Size 2-4 spinners for active smallmouth.', price: 9.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Crankbaits Medium Divers', description: 'Shad and craw colored medium diving crankbaits.', price: 16.99, tag: 'Premium', image: placeholderImg },
     ]
   },
   'Trout': {
     Rod: [
       { name: 'Trout Ultralight Rod', description: 'Sensitive 7\' ultralight rod for trout fishing.', price: 129.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Budget Trout Rod', description: 'Light action rod perfect for trout streams.', price: 49.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Budget Trout Rod', description: 'Light action rod perfect for trout streams.', price: 49.99, tag: 'Value Items', image: placeholderImg },
     ],
     Reel: [
       { name: 'Trout Spinning Reel', description: 'Ultralight reel with smooth drag for trout.', price: 89.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Entry Trout Reel', description: 'Lightweight reel suitable for trout fishing.', price: 34.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Entry Trout Reel', description: 'Lightweight reel suitable for trout fishing.', price: 34.99, tag: 'Value Items', image: placeholderImg },
     ],
     Line: [
       { name: 'Trout Fluorocarbon 4lb', description: 'Invisible fluorocarbon line for clear trout waters.', price: 18.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Trout Mono 6lb', description: 'Standard monofilament for trout fishing.', price: 6.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Trout Mono 6lb', description: 'Standard monofilament for trout fishing.', price: 6.99, tag: 'Value Items', image: placeholderImg },
     ],
     Hooks: [
       { name: 'Trout Hook Set', description: 'Small hooks size 8-14 for trout flies and bait.', price: 8.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Basic Trout Hooks', description: 'Standard trout hooks in small sizes.', price: 3.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Basic Trout Hooks', description: 'Standard trout hooks in small sizes.', price: 3.99, tag: 'Value Items', image: placeholderImg },
     ],
     Bait: [
       { name: 'Trout PowerBait', description: 'Scented bait specifically designed for trout.', price: 5.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Live Mealworms', description: 'Natural bait that trout love.', price: 2.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Live Mealworms', description: 'Natural bait that trout love.', price: 2.99, tag: 'Value Items', image: placeholderImg },
     ],
     Flies: [
       { name: 'Trout Fly Set', description: 'Assorted dry flies and nymphs for trout.', price: 24.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Basic Trout Flies', description: 'Essential flies for trout fishing.', price: 9.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Basic Trout Flies', description: 'Essential flies for trout fishing.', price: 9.99, tag: 'Value Items', image: placeholderImg },
     ]
   },
-  'Salmon': {
+  'Atlantic Salmon': {
     Rod: [
-      { name: 'Salmon Heavy Action Rod', description: '9\' heavy action rod for salmon fishing.', price: 199.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Budget Salmon Rod', description: 'Heavy action rod for salmon and steelhead.', price: 79.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Medium-Heavy Spinning Rod 7\'-7\'6"', description: 'Perfect length and action for Atlantic salmon fishing.', price: 129.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Medium-Heavy Spinning Rod', description: 'High-quality rod with excellent sensitivity and power.', price: 199.99, tag: 'Premium', image: placeholderImg },
     ],
     Reel: [
-      { name: 'Salmon Spinning Reel', description: 'Heavy-duty reel with strong drag for salmon.', price: 149.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Entry Salmon Reel', description: 'Durable reel for salmon fishing.', price: 59.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Spinning Reel 3000-4000', description: 'Smooth drag system essential for salmon fishing.', price: 89.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Spinning Reel', description: 'Heavy-duty reel with superior drag performance.', price: 179.99, tag: 'Premium', image: placeholderImg },
     ],
     Line: [
-      { name: 'Salmon Braid 30lb', description: 'Heavy braided line for salmon fishing.', price: 34.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Salmon Mono 20lb', description: 'Strong monofilament for salmon.', price: 12.99, tag: 'Cheapest', image: placeholderImg },
-    ],
-    Hooks: [
-      { name: 'Salmon Hook Set', description: 'Large hooks size 1/0 to 4/0 for salmon.', price: 16.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Basic Salmon Hooks', description: 'Heavy-duty hooks for salmon fishing.', price: 7.99, tag: 'Cheapest', image: placeholderImg },
-    ],
-    Bait: [
-      { name: 'Salmon Eggs', description: 'Cured salmon eggs for salmon fishing.', price: 8.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Live Shrimp', description: 'Natural bait that salmon find irresistible.', price: 6.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Braided Line 20-30lb + Fluorocarbon Leader 10-15lb', description: 'High-strength braid with fluorocarbon leader for salmon.', price: 39.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Braided Line + Fluorocarbon Leader', description: 'Top-tier line system for Atlantic salmon.', price: 69.99, tag: 'Premium', image: placeholderImg },
     ],
     Lures: [
-      { name: 'Salmon Spinner Set', description: 'Heavy spinners designed for salmon.', price: 29.99, tag: 'Best Value', image: placeholderImg },
-      { name: 'Salmon Spoon', description: 'Classic spoon lure for salmon fishing.', price: 12.99, tag: 'Cheapest', image: placeholderImg },
+      { name: 'Inline Spinners Size 3-5 Silver/Orange', description: 'Classic spinners in silver and orange colors.', price: 14.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Spoons 2-3" Silver/Gold', description: 'Heavy spoons in silver and gold finishes.', price: 12.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Spinner Set', description: 'High-quality spinners in various sizes and colors.', price: 24.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Bait: [
+      { name: 'Beads 8-10mm Natural/Bright', description: 'Natural and bright colored beads for drifting.', price: 8.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Spawn Sacs', description: 'Drifted under float or rig for Atlantic salmon.', price: 6.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Spawn Sacs', description: 'High-quality cured spawn sacs.', price: 12.99, tag: 'Premium', image: placeholderImg },
+    ],
+    Terminal: [
+      { name: 'Salmon Terminal Kit', description: 'Hooks, split shot, and floats for drifting setups.', price: 16.99, tag: 'Best Value', image: placeholderImg },
+      { name: 'Premium Salmon Terminal Kit', description: 'High-quality hooks and terminal tackle.', price: 29.99, tag: 'Premium', image: placeholderImg },
     ]
   },
   'Bluegill': {
@@ -229,8 +250,8 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     return speciesGearData[speciesName] || defaultGear;
   };
 
-  // Toggle state: 'Cheapest' or 'Best Value'
-  const [toggle, setToggle] = useState<'Cheapest' | 'Best Value'>('Best Value');
+  // Toggle state: 'Best Value' or 'Premium'
+  const [toggle, setToggle] = useState<'Best Value' | 'Premium'>('Best Value');
   // Track checked items
   const [owned, setOwned] = useState<Record<string, boolean>>(() => {
     const speciesGear = getGearForSpecies(displaySpecies);
@@ -305,16 +326,16 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
       {/* Toggle Buttons */}
       <View style={styles.toggleRow}>
         <TouchableOpacity
-          style={[styles.toggleBtn, toggle === 'Cheapest' && styles.toggleActive]}
-          onPress={() => setToggle('Cheapest')}
-        >
-          <Text style={[styles.toggleText, toggle === 'Cheapest' && styles.toggleTextActive]}>Cheapest</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.toggleBtn, toggle === 'Best Value' && styles.toggleActive]}
           onPress={() => setToggle('Best Value')}
         >
           <Text style={[styles.toggleText, toggle === 'Best Value' && styles.toggleTextActive]}>Best Value</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleBtn, toggle === 'Premium' && styles.toggleActive]}
+          onPress={() => setToggle('Premium')}
+        >
+          <Text style={[styles.toggleText, toggle === 'Premium' && styles.toggleTextActive]}>Premium</Text>
         </TouchableOpacity>
       </View>
       {/* Gear List */}

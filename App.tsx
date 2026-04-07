@@ -13,7 +13,7 @@ import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
 export type Species = {
   id: string;
   name: string;
-  icon: string;
+  icon?: string | number;
   color: string;
 };
 
@@ -38,8 +38,12 @@ const App = () => {
       <Stack.Navigator 
         initialRouteName="Welcome"
         screenOptions={{
+          headerTransparent: true,
           headerStyle: {
-            backgroundColor: '#2563eb',
+            backgroundColor: 'transparent',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
           },
           headerTintColor: '#fff',
           headerTitleStyle: {

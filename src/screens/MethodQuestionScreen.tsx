@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AuroraBackground from '../components/AuroraBackground';
 
 type Navigation = { navigate: (screen: string, params?: unknown) => void };
 type Route = { params: { selectedSpecies?: { name?: string }; hasGear?: boolean; ownedGroups?: string[] } };
@@ -72,6 +73,7 @@ const MethodQuestionScreen = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AuroraBackground />
       <View style={styles.header}>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
@@ -142,7 +144,7 @@ const MethodQuestionScreen = ({ navigation, route }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: 24,

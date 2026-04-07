@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Modal, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { StackNavigationProp, StackRouteProp } from '../../App';
+import { Species as AppSpecies, StackNavigationProp, StackRouteProp } from '../../App';
+import AuroraBackground from '../components/AuroraBackground';
 
-type Species = { id: string; name: string; icon: string; color: string };
+type Species = AppSpecies;
 
 const speciesData: Species[] = [
-  { id: 'atlantic-salmon', name: 'Atlantic Salmon', icon: 'fish', color: '#dc2626' },
+  {
+    id: 'atlantic-salmon',
+    name: 'Atlantic Salmon',
+    icon: require('../../assets/species/atlantic-salmon.png'),
+    color: '#dc2626'
+  },
   { id: 'largemouth-bass', name: 'Largemouth Bass', icon: 'fish', color: '#059669' },
   { id: 'smallmouth-bass', name: 'Smallmouth Bass', icon: 'fish', color: '#059669' },
   { id: 'bluegill', name: 'Bluegill', icon: 'fish', color: '#ea580c' },
@@ -61,9 +67,17 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
   };
 
   const selectedSpeciesData = speciesData.find(s => s.id === selectedSpecies);
+  const renderSpeciesIcon = (species: Species) => {
+    if (typeof species.icon === 'number') {
+      return <Image source={species.icon} style={styles.speciesImage} resizeMode="cover" />;
+    }
+
+    return <Ionicons name="fish" size={18} color="#2563eb" style={styles.fishIcon} />;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      <AuroraBackground />
       <View style={styles.header}>
         <Text style={styles.title}>What are you fishing for?</Text>
         <Text style={styles.subtitle}>Select your target species</Text>
@@ -73,7 +87,11 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
         style={styles.dropdownWrapper}
         onPress={() => setIsModalVisible(true)}
       >
-        <Ionicons name="water" size={20} color="#2563eb" style={styles.dropdownIcon} />
+        {selectedSpeciesData ? (
+          renderSpeciesIcon(selectedSpeciesData)
+        ) : (
+          <Ionicons name="water" size={20} color="#2563eb" style={styles.dropdownIcon} />
+        )}
         <Text style={styles.dropdownText}>
           {selectedSpeciesData ? selectedSpeciesData.name : "-- Select Species --"}
         </Text>
@@ -124,7 +142,7 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
                   ]}
                   onPress={() => handleSpeciesSelect(item.id)}
                 >
-                  <View style={[styles.speciesColor, { backgroundColor: item.color }]} />
+                  {renderSpeciesIcon(item)}
                   <Text style={[
                     styles.speciesName,
                     selectedSpecies === item.id && styles.selectedSpeciesName
@@ -146,7 +164,7 @@ const SpeciesSelectorScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 },
   title: {
     fontSize: 28, fontWeight: 'bold', color: '#1f2937',
@@ -166,6 +184,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   dropdownIcon: { marginRight: 12 },
+  fishIcon: { marginRight: 12 },
+  speciesImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    marginRight: 12,
+  },
   dropdownText: {
     flex: 1,
     fontSize: 16,
@@ -235,12 +260,6 @@ const styles = StyleSheet.create({
   },
   selectedSpeciesItem: {
     backgroundColor: '#eff6ff',
-  },
-  speciesColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
   },
   speciesName: {
     flex: 1,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Switch } from 'react-native';
+import AuroraBackground from '../components/AuroraBackground';
 
 type Navigation = { navigate: (screen: string, params?: unknown) => void };
 type Route = { params: { selectedSpecies?: { name?: string } } };
@@ -37,6 +38,7 @@ const OwnedGearSelectionScreen = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AuroraBackground />
       <View style={styles.header}>
         <Text style={styles.title}>What gear do you already own?</Text>
         <Text style={styles.subtitle}>Select all that apply for {selectedSpecies?.name ?? 'your species'}</Text>
@@ -57,7 +59,7 @@ const OwnedGearSelectionScreen = ({ navigation, route }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 12 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#1f2937', textAlign: 'center', marginBottom: 6 },
   subtitle: { fontSize: 14, color: '#6b7280', textAlign: 'center' },

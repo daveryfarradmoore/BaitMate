@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AuroraBackground from '../components/AuroraBackground';
 
 type Navigation = { navigate: (screen: string, params?: unknown) => void };
 type Route = { params: { selectedSpecies?: { name?: string } } };
@@ -29,6 +30,7 @@ const GearOwnershipScreen = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AuroraBackground />
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Do you already have fishing gear?</Text>
@@ -90,7 +92,7 @@ const GearOwnershipScreen = ({ navigation, route }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,

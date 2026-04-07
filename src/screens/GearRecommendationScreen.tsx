@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, FlatList, Switch, Button, Platform } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
+import AuroraBackground from '../components/AuroraBackground';
 
 // Placeholder image
 const placeholderImg = 'https://via.placeholder.com/80';
@@ -29,11 +31,9 @@ interface NavigationParams {
   gearOwned?: boolean | string[];
 }
 
-type RootStackParamList = {
-  GearRecommendation: NavigationParams;
-};
+type RecommendationRouteParams = RootStackParamList['GearRecommendation'] & NavigationParams;
 
-type GearRecommendationScreenRouteProp = RouteProp<RootStackParamList, 'GearRecommendation'>;
+type GearRecommendationScreenRouteProp = RouteProp<{ GearRecommendation: RecommendationRouteParams }, 'GearRecommendation'>;
 type GearRecommendationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GearRecommendation'>;
 
 interface Props {
@@ -223,26 +223,39 @@ const defaultGear: SpeciesGear = {
 const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
   // Accept props or context, robust to missing/incorrect params
   const params = route?.params || {};
-  console.log('GearRecommendationScreen params:', params);
-  let { species, method, gearOwned } = params;
+  const speciesParam: unknown = params.species;
+  const methodParam: unknown = params.method;
+  const gearOwnedParam: unknown = params.gearOwned;
 
   // Fallbacks and normalization
   // species: can be string or object
   let displaySpecies: string = 'Bass';
-  if (species) {
-    if (typeof species === 'string') displaySpecies = species;
-    else if (typeof species === 'object' && species.name) displaySpecies = species.name;
+  if (typeof speciesParam === 'string') {
+    displaySpecies = speciesParam;
+  } else if (
+    typeof speciesParam === 'object' &&
+    speciesParam !== null &&
+    'name' in speciesParam &&
+    typeof speciesParam.name === 'string'
+  ) {
+    displaySpecies = speciesParam.name;
   }
   // method: can be string or object
   let displayMethod: string = 'Shore Fishing';
-  if (method) {
-    if (typeof method === 'string') displayMethod = method;
-    else if (typeof method === 'object' && method.text) displayMethod = method.text;
+  if (typeof methodParam === 'string') {
+    displayMethod = methodParam;
+  } else if (
+    typeof methodParam === 'object' &&
+    methodParam !== null &&
+    'text' in methodParam &&
+    typeof methodParam.text === 'string'
+  ) {
+    displayMethod = methodParam.text;
   }
   // gearOwned: can be boolean or array
   let normalizedGearOwned: boolean | string[] = [];
-  if (Array.isArray(gearOwned)) normalizedGearOwned = gearOwned;
-  else if (typeof gearOwned === 'boolean') normalizedGearOwned = gearOwned;
+  if (Array.isArray(gearOwnedParam)) normalizedGearOwned = gearOwnedParam;
+  else if (typeof gearOwnedParam === 'boolean') normalizedGearOwned = gearOwnedParam;
   else normalizedGearOwned = [];
 
   // Get species-specific gear or default gear
@@ -322,6 +335,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <AuroraBackground />
       <Text style={styles.title}>Recommended Gear for {displaySpecies} ({displayMethod})</Text>
       {/* Toggle Buttons */}
       <View style={styles.toggleRow}>
@@ -352,12 +366,9 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={styles.totalText}>Estimated Total: ${totalPrice.toFixed(2)}</Text>
         <TouchableOpacity
           style={styles.continueBtn}
-          onPress={() => {
-            console.log('Continue pressed');
-            // navigation.navigate('NextScreen'); // Uncomment when next screen exists
-          }}
+          onPress={() => navigation.navigate('Welcome')}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>Start Over</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -367,7 +378,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
     paddingTop: Platform.OS === 'android' ? 40 : 60,
     paddingHorizontal: 16,
   },

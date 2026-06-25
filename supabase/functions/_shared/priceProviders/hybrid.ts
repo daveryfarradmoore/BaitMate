@@ -10,7 +10,7 @@ import { log } from '../logger.ts';
  * the failure mode explicit).
  */
 export class HybridPriceProvider implements PriceProvider {
-  readonly retailer: Retailer = 'mock';
+  readonly retailer: Retailer = 'hybrid';
   readonly displayName = 'Hybrid';
   readonly enabled: boolean;
 

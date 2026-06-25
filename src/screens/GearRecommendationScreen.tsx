@@ -20,11 +20,16 @@ import {
   RecommendationServiceError,
 } from '../services/recommendations';
 import type {
-  BudgetTier,
   GearGroup,
   GearItem,
   GearRecommendationResponse,
+  PriceResult,
 } from '../types/recommendations';
+import {
+  CATALOG_RETAILER_DISPLAY,
+  CATALOG_RETAILER_SLUGS,
+  type CatalogRetailerSlug,
+} from '../lib/retailerSearchUrls';
 
 interface NavigationParams {
   species?: string | { name?: string; id?: string };
@@ -49,6 +54,9 @@ interface Props {
 }
 
 const placeholderImg = 'https://via.placeholder.com/80';
+
+/** Single curated tier shown in the UI (backend still uses Best Value selection). */
+const BEST_RESULTS_TIER = 'Best Value' as const;
 
 interface NormalizedSpecies {
   slug: string;
@@ -109,7 +117,6 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     [params.gearOwned],
   );
 
-  const [budgetTier, setBudgetTier] = useState<BudgetTier>('Best Value');
   const [response, setResponse] = useState<GearRecommendationResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +130,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         species: speciesNorm.slug,
         method: methodNorm.slug,
         ownedGroups: ownedGroupsParam,
-        budgetTier,
+        budgetTier: BEST_RESULTS_TIER,
       });
       setResponse(result);
     } catch (e) {
@@ -135,7 +142,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [speciesNorm.slug, methodNorm.slug, ownedGroupsParam, budgetTier]);
+  }, [speciesNorm.slug, methodNorm.slug, ownedGroupsParam]);
 
   useEffect(() => {
     void loadRecommendations();
@@ -161,23 +168,26 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     setOwnedItemIds((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  const handleOpenLink = useCallback((item: GearItem) => {
-    const url = item.links[0]?.url ?? item.prices[0]?.url;
+  const handleOpenUrl = useCallback((url: string) => {
     if (!url) return;
     void Linking.openURL(url).catch(() => {
       // Silently swallow; we don't want to crash the screen if a URL is bad.
     });
   }, []);
 
+  const getRetailerOffer = (
+    item: GearItem,
+    slug: CatalogRetailerSlug,
+  ): PriceResult | undefined =>
+    item.prices.find((p) => p.retailer === slug);
+
   const renderGearCard = ({ item }: { item: GearItem & { groupLabel: string } }) => {
-    const image = item.prices[0]?.image ?? placeholderImg;
+    const image = item.prices.find((p) => p.image)?.image ?? placeholderImg;
     const isOwned = !!ownedItemIds[item.id];
+    const hasLivePrice = item.prices.some((p) => p.priceUSD != null);
+
     return (
-      <TouchableOpacity
-        style={styles.card}
-        activeOpacity={0.85}
-        onPress={() => handleOpenLink(item)}
-      >
+      <View style={styles.card}>
         <Image source={{ uri: image }} style={styles.image} />
         <View style={styles.cardBody}>
           <Text style={styles.gearName}>{item.groupLabel}: {item.name}</Text>
@@ -186,9 +196,35 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.rationale}>{item.rationale}</Text>
           ) : null}
           <Text style={styles.price}>
-            ${item.estPriceUSD.toFixed(2)}{' '}
-            <Text style={styles.tag}>[{item.tag}]</Text>
+            {hasLivePrice ? 'From ' : 'Est. '}${item.estPriceUSD.toFixed(2)}
           </Text>
+          {!hasLivePrice ? (
+            <Text style={styles.priceHint}>Tap a retailer below to check current price</Text>
+          ) : null}
+
+          <View style={styles.retailerRow}>
+            {CATALOG_RETAILER_SLUGS.map((slug) => {
+              const offer = getRetailerOffer(item, slug);
+              if (!offer?.url) return null;
+              const label = CATALOG_RETAILER_DISPLAY[slug];
+              const sublabel =
+                offer.priceUSD != null
+                  ? `$${offer.priceUSD.toFixed(2)}`
+                  : 'Check current price';
+              return (
+                <TouchableOpacity
+                  key={slug}
+                  style={styles.retailerBtn}
+                  onPress={() => handleOpenUrl(offer.url)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.retailerBtnLabel}>{label}</Text>
+                  <Text style={styles.retailerBtnSublabel}>{sublabel}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <View style={styles.checkboxRow}>
             <Switch
               value={isOwned}
@@ -198,7 +234,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.checkboxLabel}>I already own this</Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -208,29 +244,12 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
       <Text style={styles.title}>
         Recommended Gear for {speciesNorm.display} ({methodNorm.display})
       </Text>
-      <View style={styles.toggleRow}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, budgetTier === 'Best Value' && styles.toggleActive]}
-          onPress={() => setBudgetTier('Best Value')}
-        >
-          <Text style={[styles.toggleText, budgetTier === 'Best Value' && styles.toggleTextActive]}>
-            Best Value
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, budgetTier === 'Premium' && styles.toggleActive]}
-          onPress={() => setBudgetTier('Premium')}
-        >
-          <Text style={[styles.toggleText, budgetTier === 'Premium' && styles.toggleTextActive]}>
-            Premium
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.subtitle}>Best Results</Text>
 
       {loading ? (
         <View style={styles.statusContainer}>
           <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.statusText}>Curating gear for {speciesNorm.display}…</Text>
+          <Text style={styles.statusText}>Finding the best results for {speciesNorm.display}…</Text>
         </View>
       ) : error ? (
         <View style={styles.statusContainer}>
@@ -282,32 +301,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 6,
     textAlign: 'center',
   },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#e9ecef',
-    alignItems: 'center',
-  },
-  toggleActive: {
-    backgroundColor: '#007bff',
-  },
-  toggleText: {
+  subtitle: {
     fontSize: 16,
-    color: '#495057',
-  },
-  toggleTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#2563eb',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   statusContainer: {
     flex: 1,
@@ -382,10 +384,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
-  tag: {
+  priceHint: {
     fontSize: 12,
-    color: '#007bff',
-    fontWeight: 'bold',
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  retailerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  retailerBtn: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#cbd5e1',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    width: '48%',
+    marginBottom: 6,
+    marginRight: '2%',
+  },
+  retailerBtnLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  retailerBtnSublabel: {
+    fontSize: 11,
+    color: '#2563eb',
+    marginTop: 2,
   },
   checkboxRow: {
     flexDirection: 'row',

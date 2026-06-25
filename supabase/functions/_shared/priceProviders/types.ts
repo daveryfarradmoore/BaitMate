@@ -27,6 +27,10 @@ export interface PriceProviderContext {
   requestId: string;
   /** Optional per-group search hints from the LLM curator (M4). */
   searchHints?: Record<string, string | undefined>;
+  /** Species slug from the request (improves retailer search keywords). */
+  species?: string;
+  /** Method slug from the request. */
+  method?: string;
 }
 
 export type ProviderFlag = 'mock' | 'amazon' | 'walmart' | 'hybrid';

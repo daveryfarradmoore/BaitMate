@@ -1,4 +1,10 @@
-export type Retailer = 'amazon' | 'walmart' | 'mock';
+export type Retailer =
+  | 'amazon'
+  | 'walmart'
+  | 'basspro'
+  | 'cabelas'
+  | 'mock'
+  | 'hybrid';
 
 export type GearTag = 'Best Value' | 'Premium' | 'Value Items' | 'Cheapest';
 
@@ -11,10 +17,13 @@ export interface ProductLink {
 
 export interface PriceResult {
   retailer: Retailer;
-  priceUSD: number;
+  /** Null when only a search link is stored (no live API price yet). */
+  priceUSD: number | null;
   url: string;
   title: string;
   image?: string;
+  inStock?: boolean | null;
+  lastCheckedAt?: string | null;
 }
 
 export interface GearItem {
@@ -22,6 +31,7 @@ export interface GearItem {
   name: string;
   description: string;
   tag: GearTag;
+  /** Best available price, or catalog base estimate when no live price exists. */
   estPriceUSD: number;
   prices: PriceResult[];
   links: ProductLink[];

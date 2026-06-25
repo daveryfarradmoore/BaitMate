@@ -52,14 +52,17 @@ function errorResponse(
   return jsonResponse(body, status);
 }
 
-/**
- * Choose the canonical price for the budget tier:
- * - Cheapest of the available `PriceResult`s, since hybrid providers may
- *   return multiple offers per item.
- */
-function pickPrice(prices: PriceResult[]): PriceResult | null {
-  if (prices.length === 0) return null;
-  return prices.reduce((best, p) => (p.priceUSD < best.priceUSD ? p : best), prices[0]!);
+function effectiveEstPriceUSD(
+  prices: PriceResult[],
+  basePriceUSD: number,
+): number {
+  const live = prices
+    .map((p) => p.priceUSD)
+    .filter((v): v is number => v != null);
+  if (live.length > 0) {
+    return Math.min(...live);
+  }
+  return basePriceUSD;
 }
 
 /**
@@ -224,7 +227,7 @@ Deno.serve(async (req: Request) => {
       method: parsed.value.method,
       groups: [],
       totalEstimateUSD: 0,
-      source: { provider: 'mock', cached: false },
+      source: { provider: flag === 'hybrid' ? 'hybrid' : 'mock', cached: false },
     };
     await writeCache(db, requestHash, empty, requestId);
     return jsonResponse(empty);
@@ -243,7 +246,12 @@ Deno.serve(async (req: Request) => {
   );
 
   // ---- Pricing ---------------------------------------------------------
-  const ctx = { requestId, searchHints: curator?.searchHints };
+  const ctx = {
+    requestId,
+    searchHints: curator?.searchHints,
+    species: parsed.value.species,
+    method: parsed.value.method,
+  };
   let prices = await primary.getPrices(catalog, ctx);
   let providerForResponse: Retailer = primary.retailer;
   if (prices.size === 0 && primary !== fallback) {
@@ -275,8 +283,8 @@ Deno.serve(async (req: Request) => {
   for (const [groupSlug, candidates] of byGroup) {
     const chosen = chooseTierItem(candidates, parsed.value.budgetTier);
     if (!chosen) continue;
-    const picked = pickPrice(chosen._prices);
-    const priceUSD = picked?.priceUSD ?? chosen.basePriceUSD;
+    const itemPrices = chosen._prices;
+    const priceUSD = effectiveEstPriceUSD(itemPrices, chosen.basePriceUSD);
 
     const gearItem: GearItem = {
       id: chosen.id,
@@ -284,8 +292,8 @@ Deno.serve(async (req: Request) => {
       description: chosen.description,
       tag: chosen.tag,
       estPriceUSD: priceUSD,
-      prices: chosen._prices,
-      links: chosen._prices.map((p) => ({ retailer: p.retailer, url: p.url })),
+      prices: itemPrices,
+      links: itemPrices.map((p) => ({ retailer: p.retailer, url: p.url })),
       group: chosen.groupName,
       rationale: curator?.rationales?.[chosen.id],
     };

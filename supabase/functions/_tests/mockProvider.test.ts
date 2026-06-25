@@ -2,16 +2,15 @@ import { assertEquals } from 'jsr:@std/assert@1';
 import { MockPriceProvider } from '../_shared/priceProviders/mock.ts';
 import type { CatalogGearItem } from '../_shared/types.ts';
 
-/**
- * Fake Supabase client just rich enough for the mock provider's chained calls:
- *   .from('price_results').select(...).eq(...).in(...)
- */
 function fakeDb(rows: Array<{
   gear_item_id: string;
-  price_usd: number;
+  price_usd: number | null;
   url: string;
   title: string;
   image_url: string | null;
+  in_stock: boolean | null;
+  fetched_at: string | null;
+  retailer_slug: string;
 }>) {
   // deno-lint-ignore no-explicit-any
   const client: any = {
@@ -19,13 +18,30 @@ function fakeDb(rows: Array<{
       return {
         select(_cols: string) {
           return {
-            eq(_col: string, _val: string) {
-              return {
-                in(_col2: string, ids: string[]) {
-                  const filtered = rows.filter((r) => ids.includes(r.gear_item_id));
-                  return Promise.resolve({ data: filtered, error: null });
-                },
-              };
+            in(col: string, vals: string[]) {
+              if (col === 'retailers.slug') {
+                return {
+                  in(_col2: string, ids: string[]) {
+                    const filtered = rows.filter(
+                      (r) => vals.includes(r.retailer_slug) && ids.includes(r.gear_item_id),
+                    );
+                    return Promise.resolve({
+                      data: filtered.map((r) => ({
+                        gear_item_id: r.gear_item_id,
+                        price_usd: r.price_usd,
+                        url: r.url,
+                        title: r.title,
+                        image_url: r.image_url,
+                        in_stock: r.in_stock,
+                        fetched_at: r.fetched_at,
+                        retailers: { slug: r.retailer_slug },
+                      })),
+                      error: null,
+                    });
+                  },
+                };
+              }
+              return Promise.resolve({ data: [], error: null });
             },
           };
         },
@@ -45,31 +61,31 @@ const sampleItems: CatalogGearItem[] = [
     groupSlug: 'rod',
     groupName: 'Rod',
   },
-  {
-    id: 'item-2',
-    name: 'Test Reel',
-    description: 'A reel',
-    tag: 'Premium',
-    basePriceUSD: 149.99,
-    groupSlug: 'reel',
-    groupName: 'Reel',
-  },
 ];
 
-Deno.test('MockPriceProvider returns seeded prices keyed by gear_item_id', async () => {
+Deno.test('MockPriceProvider returns catalog retailer links without example.com', async () => {
   const db = fakeDb([
-    { gear_item_id: 'item-1', price_usd: 89.99, url: 'https://x/a', title: 'Test Rod', image_url: null },
+    {
+      gear_item_id: 'item-1',
+      price_usd: null,
+      url: 'https://www.amazon.com/s?k=test+rod',
+      title: 'Test Rod',
+      image_url: null,
+      in_stock: null,
+      fetched_at: null,
+      retailer_slug: 'amazon',
+    },
   ]);
   const provider = new MockPriceProvider(db);
   const out = await provider.getPrices(sampleItems, { requestId: 'r1' });
 
-  assertEquals(out.size, 2);
-  assertEquals(out.get('item-1')?.[0]?.priceUSD, 89.99);
-  assertEquals(out.get('item-1')?.[0]?.retailer, 'mock');
-
-  // item-2 had no seeded row, so we backfill from base_price_usd.
-  assertEquals(out.get('item-2')?.[0]?.priceUSD, 149.99);
-  assertEquals(out.get('item-2')?.[0]?.retailer, 'mock');
+  assertEquals(out.size, 1);
+  const prices = out.get('item-1') ?? [];
+  assertEquals(prices.length, 4);
+  for (const p of prices) {
+    assertEquals(p.url.includes('example.com'), false);
+    assertEquals(p.url.startsWith('https://'), true);
+  }
 });
 
 Deno.test('MockPriceProvider gracefully returns empty map for empty input', async () => {

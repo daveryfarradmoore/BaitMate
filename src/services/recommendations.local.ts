@@ -8,13 +8,17 @@ import type {
   GearItem,
   GearRecommendationRequest,
   GearRecommendationResponse,
+  PriceResult,
 } from '../types/recommendations';
+import {
+  buildRetailerSearchUrls,
+  CATALOG_RETAILER_SLUGS,
+} from '../lib/retailerSearchUrls';
 import {
   GROUP_NAME_TO_SLUG,
   SEED_DEFAULT_GEAR,
   SEED_SPECIES,
   SEED_SPECIES_GEAR_DATA,
-  mockProductUrl,
 } from './seedData';
 
 const SPECIES_SLUG_TO_NAME: Record<string, string> = SEED_SPECIES.reduce(
@@ -24,6 +28,18 @@ const SPECIES_SLUG_TO_NAME: Record<string, string> = SEED_SPECIES.reduce(
   },
   {} as Record<string, string>,
 );
+
+function buildCatalogPrices(itemName: string, groupSlug: string): PriceResult[] {
+  const urls = buildRetailerSearchUrls({ itemName, gearGroup: groupSlug });
+  return CATALOG_RETAILER_SLUGS.map((retailer) => ({
+    retailer,
+    priceUSD: null,
+    url: urls[retailer],
+    title: itemName,
+    inStock: null,
+    lastCheckedAt: null,
+  }));
+}
 
 function pickTierItem(
   groupName: string,
@@ -39,22 +55,17 @@ function pickTierItem(
   const chosen = exact ?? fallback ?? items[0];
   if (!chosen) return null;
 
-  const url = mockProductUrl(chosen.name);
+  const groupSlug = GROUP_NAME_TO_SLUG[groupName] ?? groupName.toLowerCase();
+  const prices = buildCatalogPrices(chosen.name, groupSlug);
+
   return {
     id: `local:${groupName}:${chosen.name}`,
     name: chosen.name,
     description: chosen.description,
     tag: chosen.tag,
     estPriceUSD: chosen.price,
-    prices: [
-      {
-        retailer: 'mock',
-        priceUSD: chosen.price,
-        url,
-        title: chosen.name,
-      },
-    ],
-    links: [{ retailer: 'mock', url }],
+    prices,
+    links: prices.map((p) => ({ retailer: p.retailer, url: p.url })),
     group: groupName,
   };
 }
@@ -62,8 +73,6 @@ function pickTierItem(
 export function buildLocalRecommendation(
   req: GearRecommendationRequest,
 ): GearRecommendationResponse {
-  // Accept either a slug ('largemouth-bass') or a display name ('Largemouth
-  // Bass') so this fallback stays compatible with both call sites.
   const displayName = SPECIES_SLUG_TO_NAME[req.species] ?? req.species;
   const speciesGear =
     SEED_SPECIES_GEAR_DATA[displayName] ?? SEED_DEFAULT_GEAR;

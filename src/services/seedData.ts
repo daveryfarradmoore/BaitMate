@@ -45,10 +45,15 @@ export const SEED_GEAR_GROUPS: { slug: string; name: string; order: number }[] =
   { slug: 'terminal', name: 'Terminal', order: 100 },
 ];
 
-export const SEED_RETAILERS: { slug: 'mock' | 'amazon' | 'walmart'; displayName: string }[] = [
+export const SEED_RETAILERS: {
+  slug: 'mock' | 'amazon' | 'walmart' | 'basspro' | 'cabelas';
+  displayName: string;
+}[] = [
   { slug: 'mock', displayName: 'Mock Retailer' },
   { slug: 'amazon', displayName: 'Amazon' },
   { slug: 'walmart', displayName: 'Walmart' },
+  { slug: 'basspro', displayName: 'Bass Pro Shops' },
+  { slug: 'cabelas', displayName: "Cabela's" },
 ];
 
 /**
@@ -254,9 +259,3 @@ export const SEED_DEFAULT_GEAR: SeedSpeciesGear = {
     { name: 'Live Worms', description: 'Classic live bait for fishing.', price: 2.99, tag: 'Cheapest', image: placeholderImg },
   ],
 };
-
-/** Stable URL used by the mock retailer for any seeded gear item. */
-export function mockProductUrl(itemName: string): string {
-  const slug = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  return `https://example.com/mock/${slug}`;
-}

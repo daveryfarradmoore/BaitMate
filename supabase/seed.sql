@@ -10,7 +10,9 @@
 insert into public.retailers (slug, display_name) values
   ('mock', 'Mock Retailer'),
   ('amazon', 'Amazon'),
-  ('walmart', 'Walmart')
+  ('walmart', 'Walmart'),
+  ('basspro', 'Bass Pro Shops'),
+  ('cabelas', 'Cabela''s')
 on conflict (slug) do nothing;
 
 insert into public.fishing_methods (slug, name) values
@@ -42,7 +44,7 @@ insert into public.species (slug, name, color) values
 on conflict (slug) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Gear catalog + per-species recommendations + mock pricing.
+-- Gear catalog + per-species recommendations + retailer search links.
 -- Wipes catalog rows so re-running yields a deterministic state.
 -- ---------------------------------------------------------------------------
 truncate table public.price_results restart identity cascade;
@@ -56,13 +58,9 @@ declare
   v_group_id uuid;
   v_species_id uuid;
   v_method_id uuid;
-  v_mock_retailer_id uuid;
+  v_retailer_slug text;
+  v_retailer_id uuid;
 begin
-  select id into v_mock_retailer_id from public.retailers where slug = 'mock';
-  if v_mock_retailer_id is null then
-    raise exception 'Mock retailer must be seeded before gear data';
-  end if;
-
   for rec in
     select * from (values
       -- ===================== Largemouth Bass =====================
@@ -162,14 +160,37 @@ begin
     values (v_group_id, rec.item_name, rec.item_desc, rec.item_tag, rec.item_price)
     returning id into v_item_id;
 
-    insert into public.price_results (gear_item_id, retailer_id, price_usd, url, title)
-    values (
-      v_item_id,
-      v_mock_retailer_id,
-      rec.item_price,
-      'https://example.com/mock/' || regexp_replace(lower(rec.item_name), '[^a-z0-9]+', '-', 'g'),
-      rec.item_name
-    );
+    foreach v_retailer_slug in array array['amazon', 'walmart', 'basspro', 'cabelas'] loop
+      select id into v_retailer_id from public.retailers where slug = v_retailer_slug;
+      if v_retailer_id is null then
+        raise exception 'Retailer % must be seeded before gear data', v_retailer_slug;
+      end if;
+
+      insert into public.price_results (
+        gear_item_id,
+        retailer_id,
+        price_usd,
+        url,
+        title,
+        in_stock,
+        fetched_at
+      )
+      values (
+        v_item_id,
+        v_retailer_id,
+        null,
+        public.build_retailer_search_url(v_retailer_slug, rec.item_name, rec.group_slug),
+        rec.item_name,
+        null,
+        null
+      )
+      on conflict (gear_item_id, retailer_id) do update set
+        price_usd = excluded.price_usd,
+        url = excluded.url,
+        title = excluded.title,
+        in_stock = excluded.in_stock,
+        fetched_at = excluded.fetched_at;
+    end loop;
 
     -- Same gear list applies to every method until method-specific data is curated.
     for v_method_id in select id from public.fishing_methods loop

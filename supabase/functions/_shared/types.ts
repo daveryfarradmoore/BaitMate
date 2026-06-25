@@ -3,7 +3,13 @@
 // Supabase only bundles files under `supabase/functions/` so we cannot import
 // from `src/` directly.
 
-export type Retailer = 'amazon' | 'walmart' | 'mock';
+export type Retailer =
+  | 'amazon'
+  | 'walmart'
+  | 'basspro'
+  | 'cabelas'
+  | 'mock'
+  | 'hybrid';
 
 export type GearTag = 'Best Value' | 'Premium' | 'Value Items' | 'Cheapest';
 
@@ -16,10 +22,12 @@ export interface ProductLink {
 
 export interface PriceResult {
   retailer: Retailer;
-  priceUSD: number;
+  priceUSD: number | null;
   url: string;
   title: string;
   image?: string;
+  inStock?: boolean | null;
+  lastCheckedAt?: string | null;
 }
 
 export interface GearItem {

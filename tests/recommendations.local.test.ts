@@ -22,8 +22,13 @@ describe('buildLocalRecommendation', () => {
       expect(g.items).toHaveLength(1);
       const item = g.items[0]!;
       expect(item.estPriceUSD).toBeGreaterThan(0);
-      expect(item.prices[0]?.retailer).toBe('mock');
-      expect(item.links[0]?.url).toMatch(/^https:\/\/example\.com\/mock\//);
+      expect(item.prices.length).toBe(4);
+      for (const p of item.prices) {
+        expect(['amazon', 'walmart', 'basspro', 'cabelas']).toContain(p.retailer);
+        expect(p.url).toMatch(/^https:\/\//);
+        expect(p.url).not.toContain('example.com');
+        expect(p.priceUSD).toBeNull();
+      }
     }
   });
 

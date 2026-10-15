@@ -8,6 +8,11 @@ import GearOwnershipScreen from './src/screens/GearOwnershipScreen';
 import OwnedGearSelectionScreen from './src/screens/OwnedGearSelectionScreen';
 import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
 import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
+import BudgetScreen from './src/screens/BudgetScreen';
+import FishingMapScreen from './src/screens/FishingMapScreen';
+import { Platform, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from './src/theme';
 
 // Define the Species type
 export type Species = {
@@ -22,9 +27,11 @@ export type RootStackParamList = {
   Welcome: undefined;
   SpeciesSelector: undefined;
   GearOwnership: { selectedSpecies: Species };
-  OwnedGearSelection: { selectedSpecies: Species; hasGear: boolean };
-  MethodQuestion: { selectedSpecies: Species; hasGear: boolean; ownedGear: string[] };
-  GearRecommendation: { selectedSpecies: Species; hasGear: boolean; ownedGear: string[]; method: string };
+  OwnedGearSelection: { selectedSpecies: Species };
+  Budget: { selectedSpecies: Species; hasGear: boolean; ownedGroups: string[]; budgetUSD?: number };
+  MethodQuestion: { selectedSpecies: Species; hasGear: boolean; ownedGroups: string[]; budgetUSD: number };
+  GearRecommendation: { selectedSpecies: Species; ownedGroups: string[]; method: string; budgetUSD: number };
+  FishingMap: undefined;
 };
 
 export type StackNavigationProp = RNStackNavigationProp<RootStackParamList>;
@@ -37,24 +44,32 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator 
         initialRouteName="Welcome"
-        screenOptions={{
-          headerTransparent: true,
+        screenOptions={({ navigation }) => ({
           headerStyle: {
-            backgroundColor: 'transparent',
+            backgroundColor: colors.canvas,
             elevation: 0,
             shadowOpacity: 0,
             borderBottomWidth: 0,
           },
-          headerTintColor: '#fff',
+          headerTintColor: colors.ink,
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontWeight: '700',
           },
-        }}
+          headerBackTitleVisible: false,
+          headerRight: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Explore fishing map" onPress={() => navigation.navigate('FishingMap')} style={{ padding: 12, marginRight: 12 }}><Ionicons name="map-outline" size={22} color={colors.brand} /></TouchableOpacity>,
+          // Stack's web CardSheet normally expands for document scrolling,
+          // but Expo locks the body. Keep screens bounded so ScrollView and
+          // FlatList own scrolling, including when the window is resized.
+          cardStyle: {
+            backgroundColor: colors.canvas,
+            ...(Platform.OS === 'web' ? { flex: 1, minHeight: 0, overflow: 'hidden' as const } : {}),
+          },
+        })}
       >
         <Stack.Screen 
           name="Welcome" 
           component={WelcomeScreen} 
-          options={{ title: 'BaitMate' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="SpeciesSelector" 
@@ -71,6 +86,7 @@ const App = () => {
           component={OwnedGearSelectionScreen} 
           options={{ title: 'Select Owned Gear' }}
         />
+        <Stack.Screen name="Budget" component={BudgetScreen} options={{ title: 'Your Budget' }} />
         <Stack.Screen 
           name="MethodQuestion" 
           component={MethodQuestionScreen} 
@@ -80,6 +96,11 @@ const App = () => {
           name="GearRecommendation" 
           component={GearRecommendationScreen} 
           options={{ title: 'Recommendations' }}
+        />
+        <Stack.Screen
+          name="FishingMap"
+          component={FishingMapScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

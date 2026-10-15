@@ -1,265 +1,118 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import PlanProgress from '../components/PlanProgress';
 import AuroraBackground from '../components/AuroraBackground';
+import type { StackNavigationProp, StackRouteProp } from '../../App';
+import { colors, shadows } from '../theme';
 
-type Navigation = { navigate: (screen: string, params?: unknown) => void };
-type Route = { params: { selectedSpecies?: { name?: string }; hasGear?: boolean; ownedGroups?: string[] } };
+interface Props {
+  navigation: StackNavigationProp;
+  route: StackRouteProp<'MethodQuestion'>;
+}
 
-interface Props { navigation: Navigation; route: Route }
+const METHODS = [
+  { id: 'shore', title: 'From shore', description: 'Banks, piers, docks, and beaches', icon: 'location-outline' },
+  { id: 'wading', title: 'Wading', description: 'Rivers, streams, and shallow flats', icon: 'water-outline' },
+  { id: 'boat', title: 'From a boat', description: 'Open water, trolling, and deeper spots', icon: 'boat-outline' },
+];
 
 const MethodQuestionScreen = ({ navigation, route }: Props) => {
-  const { selectedSpecies, hasGear, ownedGroups } = route.params;
-  
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-
-  const questions: { id: string; question: string; options: { id: string; text: string; icon: string }[] }[] = [
-    {
-      id: 'location',
-      question: 'Where will you be fishing?',
-      options: [
-        { id: 'shore', text: 'From Shore', icon: 'location' },
-        { id: 'wading', text: 'Wading', icon: 'water' },
-        { id: 'boat', text: 'From Boat', icon: 'boat' },
-      ]
-    },
-    {
-      id: 'bait',
-      question: 'What do you prefer to use?',
-      options: [
-        { id: 'bait', text: 'Live Bait', icon: 'bug' },
-        { id: 'lures', text: 'Artificial Lures', icon: 'fish' },
-        { id: 'both', text: 'Both', icon: 'options' },
-      ]
-    },
-    {
-      id: 'difficulty',
-      question: 'What\'s your experience level?',
-      options: [
-        { id: 'beginner', text: 'Beginner', icon: 'school' },
-        { id: 'intermediate', text: 'Some Experience', icon: 'person' },
-        { id: 'advanced', text: 'Experienced', icon: 'trophy' },
-      ]
-    }
-  ];
-
-  const handleAnswerSelect = (questionId: string, answerId: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answerId
-    }));
-  };
-
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      // All questions answered, show results or recommendations
-      handleFinish();
-    }
-  };
+  const { selectedSpecies, hasGear, ownedGroups, budgetUSD } = route.params;
+  const [method, setMethod] = useState('');
 
   const handleFinish = () => {
+    if (!method) return;
     navigation.navigate('GearRecommendation', {
-      species: selectedSpecies,
-      method: answers.location || 'Shore Fishing',
-      gearOwned: ownedGroups && ownedGroups.length > 0 ? ownedGroups : hasGear,
+      selectedSpecies,
+      method,
+      budgetUSD,
+      ownedGroups: hasGear ? ownedGroups : [],
     });
   };
-
-  const currentQ = questions[currentQuestion]!;
-  const hasAnswered = answers[currentQ.id];
 
   return (
     <SafeAreaView style={styles.container}>
       <AuroraBackground />
-      <View style={styles.header}>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${((currentQuestion + 1) / questions.length) * 100}%` }
-              ]} 
-            />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <PlanProgress step={4} onBudget={() => navigation.navigate('Budget', route.params)} onSpecies={() => navigation.navigate('SpeciesSelector')} onGear={() => navigation.navigate('GearOwnership', { selectedSpecies })} />
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryPill}><Ionicons name="fish" size={15} color={colors.brand} /><Text style={styles.summaryText}>{selectedSpecies.name}</Text></View>
+          <View style={styles.summaryPill}>
+            <Ionicons name="bag-check-outline" size={15} color={colors.brand} />
+            <Text style={styles.summaryText}>{ownedGroups.length} owned categories</Text>
           </View>
-          <Text style={styles.progressText}>
-            {currentQuestion + 1} of {questions.length}
-          </Text>
         </View>
-        
-        <Text style={styles.title}>{currentQ.question}</Text>
-        <Text style={styles.subtitle}>
-          This helps us recommend the best gear for {selectedSpecies?.name}
-        </Text>
-      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.optionsContainer}>
-          {currentQ.options.map((option) => (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.optionCard,
-                answers[currentQ.id] === option.id && styles.selectedCard,
-              ]}
-              onPress={() => handleAnswerSelect(currentQ.id, option.id)}
-            >
-              <View style={styles.optionContent}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name={option.icon as any} size={24} color="#6b7280" />
+        <Text style={styles.title}>How will you fish most often?</Text>
+        <Text style={styles.subtitle}>This changes the tackle and setup that will work best in the water.</Text>
+
+        <View style={styles.options}>
+          {METHODS.map((option) => {
+            const selected = option.id === method;
+            return (
+              <TouchableOpacity
+                key={option.id}
+                style={[styles.optionCard, selected && styles.optionCardSelected]}
+                onPress={() => setMethod(option.id)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
+                  <Ionicons name={option.icon as any} size={27} color={selected ? '#fff' : colors.brand} />
                 </View>
-                <Text style={styles.optionText}>{option.text}</Text>
-              </View>
-              {answers[currentQ.id] === option.id && (
-                <View style={styles.checkmark}>
-                  <Ionicons name="checkmark-circle" size={24} color="#2563eb" />
+                <View style={styles.optionCopy}>
+                  <Text style={styles.optionTitle}>{option.title}</Text>
+                  <Text style={styles.optionDescription}>{option.description}</Text>
                 </View>
-              )}
-            </TouchableOpacity>
-          ))}
+                <View style={[styles.radio, selected && styles.radioSelected]}>
+                  {selected ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerHint}>{method ? 'Your personalized plan is ready to build.' : 'Choose one method to continue.'}</Text>
+          <TouchableOpacity style={[styles.finishButton, !method && styles.disabledButton]} onPress={handleFinish} disabled={!method}>
+            <Text style={styles.finishText}>Build my gear plan</Text>
+            <Ionicons name="sparkles" size={18} color="#fff" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.nextButton,
-            !hasAnswered && styles.disabledButton,
-          ]}
-          onPress={handleNext}
-          disabled={!hasAnswered}
-        >
-          <Text style={styles.nextButtonText}>
-            {currentQuestion === questions.length - 1 ? 'Get Recommendations' : 'Next'}
-          </Text>
-          <Ionicons name="arrow-forward" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 24,
-  },
-  progressContainer: {
-    marginBottom: 24,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2563eb',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  optionsContainer: {
-    paddingBottom: 20,
-  },
-  optionCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  selectedCard: {
-    borderWidth: 2,
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
-  },
-  optionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  optionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1f2937',
-    flex: 1,
-  },
-  checkmark: {
-    marginLeft: 12,
-  },
-  footer: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  nextButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#9ca3af',
-  },
-  nextButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 8,
-  },
+  container: { flex: 1, backgroundColor: 'transparent' },
+  content: { flexGrow: 1, width: '100%', maxWidth: 720, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 28 },
+  stepRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stepLabel: { fontSize: 11, letterSpacing: 1.5, fontWeight: '800', color: colors.brand },
+  stepHint: { fontSize: 13, fontWeight: '600', color: colors.inkMuted },
+  progressTrack: { height: 6, borderRadius: 6, backgroundColor: colors.border, marginTop: 10, marginBottom: 26 },
+  progressFill: { width: '100%', height: '100%', borderRadius: 6, backgroundColor: colors.brand },
+  summaryRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 },
+  summaryPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 11, margin: 4 },
+  summaryText: { marginLeft: 6, fontSize: 12, fontWeight: '700', color: colors.brandDark },
+  title: { fontSize: 32, lineHeight: 39, fontWeight: '800', color: colors.ink, textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 15, lineHeight: 22, color: colors.inkMuted, textAlign: 'center', marginBottom: 26 },
+  options: { marginBottom: 20 },
+  optionCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 17, marginBottom: 11, ...shadows.card },
+  optionCardSelected: { borderWidth: 1, borderColor: colors.brand, backgroundColor: '#F7FFFC' },
+  iconWrap: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center' },
+  iconWrapSelected: { backgroundColor: colors.brand },
+  optionCopy: { flex: 1, marginHorizontal: 15 },
+  optionTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: 4 },
+  optionDescription: { fontSize: 13, lineHeight: 18, color: colors.inkMuted },
+  radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { backgroundColor: colors.brand, borderColor: colors.brand },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
+  footerHint: { flex: 1, minWidth: 190, fontSize: 13, color: colors.inkMuted, marginRight: 16, marginBottom: 8 },
+  finishButton: { backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 15, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center' },
+  disabledButton: { backgroundColor: colors.disabled },
+  finishText: { color: '#fff', fontSize: 16, fontWeight: '800', marginRight: 9 },
 });
 
-export default MethodQuestionScreen; 
+export default MethodQuestionScreen;

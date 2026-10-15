@@ -5,6 +5,7 @@ export const gearRecommendationRequestSchema = z.object({
   species: z.string().trim().min(1, 'species is required'),
   method: z.string().trim().min(1, 'method is required'),
   ownedGroups: z.array(z.string().trim().min(1)).default([]),
+  budgetUSD: z.number().finite().min(0).max(100000).refine(v => Math.abs(v * 100 - Math.round(v * 100)) < 0.000001, 'Use at most two decimal places').optional(),
   budgetTier: z.enum(['Best Value', 'Premium']).default('Best Value'),
 });
 

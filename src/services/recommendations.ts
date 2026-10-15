@@ -4,6 +4,7 @@ import type {
   GearRecommendationResponse,
   RecommendationErrorBody,
 } from '../types/recommendations';
+import { budgetCents } from '../../supabase/functions/_shared/budget';
 import { buildLocalRecommendation } from './recommendations.local';
 
 /**
@@ -29,6 +30,7 @@ const FUNCTION_NAME = 'getGearRecommendations';
 export async function fetchGearRecommendations(
   req: GearRecommendationRequest,
 ): Promise<GearRecommendationResponse> {
+  if (req.budgetUSD !== undefined) budgetCents(req.budgetUSD);
   // Offline / un-configured demo mode.
   if (!isSupabaseConfigured) {
     return buildLocalRecommendation(req);

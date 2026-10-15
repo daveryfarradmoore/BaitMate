@@ -1,47 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Modal, FlatList, Image } from 'react-native';
+import {
+  TextInput,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Species as AppSpecies, StackNavigationProp, StackRouteProp } from '../../App';
+import type { Species as AppSpecies, StackNavigationProp, StackRouteProp } from '../../App';
+import SwimmingFish from '../components/SwimmingFish';
+import PlanProgress from '../components/PlanProgress';
 import AuroraBackground from '../components/AuroraBackground';
+import { SEED_SPECIES, SEED_SPECIES_GEAR_DATA } from '../services/seedData';
+import { colors, shadows } from '../theme';
 
 type Species = AppSpecies;
 
-const speciesData: Species[] = [
-  {
-    id: 'atlantic-salmon',
-    name: 'Atlantic Salmon',
-    icon: require('../../assets/species/atlantic-salmon.png'),
-    color: '#dc2626'
-  },
-  { id: 'largemouth-bass', name: 'Largemouth Bass', icon: 'fish', color: '#059669' },
-  { id: 'smallmouth-bass', name: 'Smallmouth Bass', icon: 'fish', color: '#059669' },
-  { id: 'bluegill', name: 'Bluegill', icon: 'fish', color: '#ea580c' },
-  { id: 'brook-trout', name: 'Brook Trout', icon: 'fish', color: '#0891b2' },
-  { id: 'brown-trout', name: 'Brown Trout', icon: 'fish', color: '#0891b2' },
-  { id: 'bullheads', name: 'Bullheads', icon: 'fish', color: '#7c3aed' },
-  { id: 'channel-catfish', name: 'Channel Catfish', icon: 'fish', color: '#7c3aed' },
-  { id: 'chinook-salmon', name: 'Chinook Salmon', icon: 'fish', color: '#dc2626' },
-  { id: 'coho-salmon', name: 'Coho Salmon', icon: 'fish', color: '#dc2626' },
-  { id: 'common-carp', name: 'Common Carp and Suckers', icon: 'fish', color: '#6b7280' },
-  { id: 'crappie', name: 'Crappie', icon: 'fish', color: '#8b5cf6' },
-  { id: 'flathead-catfish', name: 'Flathead Catfish', icon: 'fish', color: '#7c3aed' },
-  { id: 'lake-sturgeon', name: 'Lake Sturgeon', icon: 'fish', color: '#374151' },
-  { id: 'lake-trout', name: 'Lake Trout', icon: 'fish', color: '#0891b2' },
-  { id: 'menominee', name: 'Menominee', icon: 'fish', color: '#f59e0b' },
-  { id: 'muskellunge', name: 'Muskellunge', icon: 'fish', color: '#10b981' },
-  { id: 'northern-pike', name: 'Northern Pike', icon: 'fish', color: '#10b981' },
-  { id: 'pink-salmon', name: 'Pink Salmon', icon: 'fish', color: '#dc2626' },
-  { id: 'pumpkinseed', name: 'Pumpkinseed', icon: 'fish', color: '#ea580c' },
-  { id: 'rainbow-trout', name: 'Rainbow Trout', icon: 'fish', color: '#0891b2' },
-  { id: 'rock-bass', name: 'Rock Bass', icon: 'fish', color: '#059669' },
-  { id: 'smelt', name: 'Smelt', icon: 'fish', color: '#6b7280' },
-  { id: 'steelhead-trout', name: 'Steelhead Trout', icon: 'fish', color: '#0891b2' },
-  { id: 'redear-sunfish', name: 'Redear Sunfish', icon: 'fish', color: '#ea580c' },
-  { id: 'walleye', name: 'Walleye', icon: 'fish', color: '#be185d' },
-  { id: 'white-bass', name: 'White Bass', icon: 'fish', color: '#059669' },
-  { id: 'whitefish', name: 'Whitefish', icon: 'fish', color: '#6b7280' },
-  { id: 'yellow-perch', name: 'Yellow Perch', icon: 'fish', color: '#f59e0b' },
-];
+const speciesData: Species[] = SEED_SPECIES.map((species) => ({
+  id: species.slug,
+  name: species.name,
+  color: species.color,
+
+}));
 
 type Props = {
   navigation: StackNavigationProp;
@@ -49,227 +32,154 @@ type Props = {
 };
 
 const SpeciesSelectorScreen = ({ navigation }: Props) => {
-  const [selectedSpecies, setSelectedSpecies] = useState<string>("");
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const { width } = useWindowDimensions();
+  const compact = width < 520;
+  const [paused, setPaused] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('All species');
+  const filters = ['All species', 'Bass', 'Trout & salmon', 'Other'];
+  const visibleSpecies = speciesData.filter(species => {
+    const group = species.id.includes('bass') ? 'Bass' : /trout|salmon/.test(species.id) ? 'Trout & salmon' : 'Other';
+    return (filter === 'All species' || group === filter) && species.name.toLowerCase().includes(query.trim().toLowerCase());
+  });
+  const [selectedId, setSelectedId] = useState('');
+  const selectedSpecies = speciesData.find((species) => species.id === selectedId);
 
   const handleContinue = () => {
     if (selectedSpecies) {
-      const species = speciesData.find(s => s.id === selectedSpecies);
-      if (species) {
-        navigation.navigate('GearOwnership', { selectedSpecies: species });
-      }
+      navigation.navigate('GearOwnership', { selectedSpecies });
     }
-  };
-
-  const handleSpeciesSelect = (speciesId: string) => {
-    setSelectedSpecies(speciesId);
-    setIsModalVisible(false);
-  };
-
-  const selectedSpeciesData = speciesData.find(s => s.id === selectedSpecies);
-  const renderSpeciesIcon = (species: Species) => {
-    if (typeof species.icon === 'number') {
-      return <Image source={species.icon} style={styles.speciesImage} resizeMode="cover" />;
-    }
-
-    return <Ionicons name="fish" size={18} color="#2563eb" style={styles.fishIcon} />;
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <AuroraBackground />
-      <View style={styles.header}>
-        <Text style={styles.title}>What are you fishing for?</Text>
-        <Text style={styles.subtitle}>Select your target species</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <PlanProgress step={1} />
+          <Text style={styles.eyebrow}>FIND YOUR NEXT CATCH</Text>
+          <Text style={styles.title}>What are you fishing for?</Text>
+          <Text style={styles.subtitle}>
+            Pick one target species. We’ll tailor the setup and estimated cost around it.
+          </Text>
 
-      <TouchableOpacity 
-        style={styles.dropdownWrapper}
-        onPress={() => setIsModalVisible(true)}
-      >
-        {selectedSpeciesData ? (
-          renderSpeciesIcon(selectedSpeciesData)
-        ) : (
-          <Ionicons name="water" size={20} color="#2563eb" style={styles.dropdownIcon} />
-        )}
-        <Text style={styles.dropdownText}>
-          {selectedSpeciesData ? selectedSpeciesData.name : "-- Select Species --"}
-        </Text>
-        <Ionicons name="chevron-down" size={20} color="#6b7280" style={styles.chevronIcon} />
-      </TouchableOpacity>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            !selectedSpecies && styles.disabledButton,
-          ]}
-          onPress={handleContinue}
-          disabled={!selectedSpecies}
-        >
-          <Text style={styles.continueButtonText}>Continue</Text>
-          <Ionicons name={"arrow-forward"} size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Species Selection Modal */}
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Species</Text>
-              <TouchableOpacity
-                onPress={() => setIsModalVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <FlatList
-              data={speciesData}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.speciesItem,
-                    selectedSpecies === item.id && styles.selectedSpeciesItem
-                  ]}
-                  onPress={() => handleSpeciesSelect(item.id)}
-                >
-                  {renderSpeciesIcon(item)}
-                  <Text style={[
-                    styles.speciesName,
-                    selectedSpecies === item.id && styles.selectedSpeciesName
-                  ]}>
-                    {item.name}
-                  </Text>
-                  {selectedSpecies === item.id && (
-                    <Ionicons name="checkmark" size={20} color="#2563eb" />
-                  )}
-                </TouchableOpacity>
-              )}
-              style={styles.speciesList}
-            />
+          <View style={styles.search}>
+            <Ionicons name="search-outline" size={21} color={colors.inkMuted} />
+            <TextInput value={query} onChangeText={setQuery} placeholder="Search fish species…" placeholderTextColor={colors.inkMuted} accessibilityLabel="Search fish species" style={styles.searchInput} autoCorrect={false} />
+            {query ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} style={{ padding: 10 }}><Ionicons name="close-circle" size={20} color={colors.inkMuted} /></TouchableOpacity> : null}
           </View>
+          <View style={styles.filters}>{filters.map(label => <TouchableOpacity key={label} accessibilityRole="button" accessibilityState={{ selected: filter === label }} onPress={() => setFilter(label)} style={[styles.chip, filter === label && styles.chipActive]}><Text style={{ color: filter === label ? 'white' : colors.inkMuted, fontWeight: '600' }}>{label}</Text></TouchableOpacity>)}</View>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={paused ? 'Resume fish animation' : 'Pause fish animation'} onPress={() => setPaused(value => !value)} style={styles.motionButton}>
+            <Ionicons name={paused ? 'play-outline' : 'pause-outline'} size={16} color={colors.brand} /><Text style={styles.motionLabel}>{paused ? 'Resume swimming' : 'Pause swimming'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.resultCount}>{visibleSpecies.length} of {speciesData.length} available species</Text>
+          <View style={styles.grid}>
+            {visibleSpecies.map((species) => {
+              const selected = species.id === selectedId;
+              return (
+                <TouchableOpacity
+                  key={species.id}
+                  accessibilityRole="radio"
+                  accessibilityLabel={species.name}
+                  accessibilityState={{ checked: selected }}
+                  style={[styles.speciesCard, compact && styles.speciesCardCompact, selected && styles.speciesCardSelected]}
+                  onPress={() => setSelectedId(species.id)}
+                  activeOpacity={0.82}
+                >
+                  <SwimmingFish speciesId={species.id} paused={paused} />
+                  <Text style={styles.speciesName}>{species.name}</Text>
+                  <Text style={styles.cardHint}>{selected ? 'Selected for your plan' : 'Tap to explore setup'}</Text>
+                  <View style={[styles.radio, selected && styles.radioSelected]}>
+                    {selected ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {!visibleSpecies.length && <View style={styles.empty}><Ionicons name="search-outline" size={32} color={colors.brand} /><Text style={styles.speciesName}>No matching species</Text><Text style={styles.cardHint}>Try another name or browse the full catalog.</Text><TouchableOpacity onPress={() => { setQuery(''); setFilter('All species'); }} accessibilityRole="button" style={styles.chip}><Text style={{ color: colors.brand }}>Show all species</Text></TouchableOpacity></View>}
+          {selectedSpecies && <View style={styles.preview} accessibilityLiveRegion="polite">
+            <Text style={styles.eyebrow}>YOUR TARGET · {selectedSpecies.name.toUpperCase()}</Text>
+            <SwimmingFish key={selectedSpecies.id} speciesId={selectedSpecies.id} paused={paused} large />
+            <Text style={styles.previewTitle}>A setup built around your catch.</Text>
+            <Text style={styles.previewCopy}>Explore {Object.keys(SEED_SPECIES_GEAR_DATA[selectedSpecies.name] ?? {}).join(', ').toLowerCase()} in your gear plan. Next, tell us what you already own.</Text>
+          </View>}
+
         </View>
-      </Modal>
+      </ScrollView>
+      <View style={styles.dock}><View style={[styles.footerCard, compact && { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
+        <View style={styles.selectionSummary}><Text style={styles.summaryLabel}>YOUR TARGET</Text><Text style={styles.summaryValue}>{selectedSpecies?.name ?? 'Choose a species to start'}</Text></View>
+        <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !selectedSpecies }} style={[styles.continueButton, !selectedSpecies && styles.disabledButton]} onPress={handleContinue} disabled={!selectedSpecies}><Text style={styles.continueText}>Choose my gear</Text><Ionicons name="arrow-forward" size={19} color="white" /></TouchableOpacity>
+      </View></View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  motionButton: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 8 },
+  motionLabel: { fontSize: 12, color: colors.brand, fontWeight: '600' },
+  eyebrow: { color: colors.brand, fontSize: 11, fontWeight: '800', letterSpacing: 1.8, marginBottom: 12 },
+  search: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingLeft: 16, marginBottom: 14 },
+  searchInput: { flex: 1, padding: 16, fontSize: 16, color: colors.ink, minWidth: 0 },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  chip: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: colors.brandSoft },
+  chipActive: { backgroundColor: colors.brand },
+  resultCount: { color: colors.inkMuted, fontSize: 12, marginBottom: 10 },
+  cardHint: { color: colors.inkMuted, fontSize: 12, marginTop: 8, textAlign: 'center' },
+  empty: { alignItems: 'center', gap: 16, padding: 24 },
+  preview: { backgroundColor: colors.brandSoft, padding: 24, borderRadius: 20, marginTop: 24 },
+  previewTitle: { color: colors.ink, fontSize: 23, fontWeight: '800', marginBottom: 8 },
+  previewCopy: { color: colors.inkMuted, fontSize: 15, lineHeight: 23 },
+  dock: { backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, paddingHorizontal: 20, paddingVertical: 14 },
   container: { flex: 1, backgroundColor: 'transparent' },
-  header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 },
-  title: {
-    fontSize: 28, fontWeight: 'bold', color: '#1f2937',
-    textAlign: 'center', marginBottom: 8,
-  },
-  subtitle: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
-  dropdownWrapper: {
-    marginHorizontal: 24,
-    marginTop: 20,
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingVertical: 28 },
+  content: { width: '100%', maxWidth: 780, alignSelf: 'center' },
+  stepRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stepLabel: { fontSize: 11, letterSpacing: 1.5, fontWeight: '800', color: colors.brand },
+  stepHint: { fontSize: 13, fontWeight: '600', color: colors.inkMuted },
+  progressTrack: { height: 6, borderRadius: 6, backgroundColor: colors.border, marginTop: 10, marginBottom: 30 },
+  progressFill: { width: '33%', height: '100%', borderRadius: 6, backgroundColor: colors.brand },
+  title: { fontSize: 34, lineHeight: 40, fontWeight: '800', color: colors.ink, textAlign: 'left', marginBottom: 10 },
+  subtitle: { fontSize: 16, lineHeight: 24, color: colors.inkMuted, textAlign: 'left', maxWidth: 590, marginBottom: 28 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 },
+  speciesCard: {
+    width: '46%',
+    minWidth: 170,
+    flexGrow: 1,
+    margin: 6,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 18,
+    alignItems: 'center',
+    position: 'relative',
+    ...shadows.card,
+  },
+  speciesCardSelected: { borderWidth: 1, borderColor: colors.brand, backgroundColor: '#F7FFFC' },
+  speciesCardCompact: { width: '45%', minWidth: 0, paddingHorizontal: 10 },
+  iconWrap: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  speciesImage: { width: 58, height: 58, borderRadius: 18 },
+  speciesName: { fontSize: 15, fontWeight: '700', color: colors.ink, textAlign: 'center' },
+  radio: { position: 'absolute', right: 12, top: 12, width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { backgroundColor: colors.brand, borderColor: colors.brand },
+  footerCard: {
+    width: '100%', maxWidth: 780, alignSelf: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-  },
-  dropdownIcon: { marginRight: 12 },
-  fishIcon: { marginRight: 12 },
-  speciesImage: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1f2937',
-  },
-  chevronIcon: { marginLeft: 8 },
-  footer: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  continueButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledButton: { backgroundColor: '#9ca3af' },
-  continueButtonText: {
-    color: 'white', fontSize: 18, fontWeight: '600', marginRight: 8,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    minHeight: '50%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  speciesList: {
-    flex: 1,
-  },
-  speciesItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  selectedSpeciesItem: {
-    backgroundColor: '#eff6ff',
-  },
-  speciesName: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1f2937',
-  },
-  selectedSpeciesName: {
-    color: '#2563eb',
-    fontWeight: '600',
-  },
+  selectionSummary: { flex: 1, marginRight: 16 },
+  summaryLabel: { fontSize: 10, letterSpacing: 1.2, fontWeight: '800', color: colors.inkMuted, marginBottom: 4 },
+  summaryValue: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  continueButton: { backgroundColor: colors.brand, borderRadius: 13, paddingVertical: 13, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center' },
+  disabledButton: { backgroundColor: colors.disabled },
+  continueText: { color: '#fff', fontSize: 16, fontWeight: '700', marginRight: 8 },
 });
 
 export default SpeciesSelectorScreen;

@@ -10,7 +10,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -30,17 +32,11 @@ import {
   CATALOG_RETAILER_SLUGS,
   type CatalogRetailerSlug,
 } from '../lib/retailerSearchUrls';
-
-interface NavigationParams {
-  species?: string | { name?: string; id?: string };
-  method?: string | { text?: string; id?: string };
-  gearOwned?: boolean | string[];
-}
-
-type RecommendationRouteParams = RootStackParamList['GearRecommendation'] & NavigationParams;
+import { budgetStatus } from '../../supabase/functions/_shared/budget';
+import { colors, shadows } from '../theme';
 
 type GearRecommendationScreenRouteProp = RouteProp<
-  { GearRecommendation: RecommendationRouteParams },
+  RootStackParamList,
   'GearRecommendation'
 >;
 type GearRecommendationScreenNavigationProp = StackNavigationProp<
@@ -52,8 +48,6 @@ interface Props {
   route: GearRecommendationScreenRouteProp;
   navigation: GearRecommendationScreenNavigationProp;
 }
-
-const placeholderImg = 'https://via.placeholder.com/80';
 
 /** Single curated tier shown in the UI (backend still uses Best Value selection). */
 const BEST_RESULTS_TIER = 'Best Value' as const;
@@ -108,13 +102,17 @@ function normalizeOwnedGroups(raw: unknown): string[] {
 }
 
 const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
+  const compact = useWindowDimensions().width < 520;
   const params = route?.params ?? {};
 
-  const speciesNorm = useMemo(() => normalizeSpecies(params.species), [params.species]);
+  const speciesNorm = useMemo(
+    () => normalizeSpecies(params.selectedSpecies),
+    [params.selectedSpecies],
+  );
   const methodNorm = useMemo(() => normalizeMethod(params.method), [params.method]);
   const ownedGroupsParam = useMemo(
-    () => normalizeOwnedGroups(params.gearOwned),
-    [params.gearOwned],
+    () => normalizeOwnedGroups(params.ownedGroups),
+    [params.ownedGroups],
   );
 
   const [response, setResponse] = useState<GearRecommendationResponse | null>(null);
@@ -131,7 +129,9 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         method: methodNorm.slug,
         ownedGroups: ownedGroupsParam,
         budgetTier: BEST_RESULTS_TIER,
+        budgetUSD: params.budgetUSD,
       });
+      setOwnedItemIds({});
       setResponse(result);
     } catch (e) {
       const message = e instanceof RecommendationServiceError
@@ -142,7 +142,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [speciesNorm.slug, methodNorm.slug, ownedGroupsParam]);
+  }, [speciesNorm.slug, methodNorm.slug, ownedGroupsParam, params.budgetUSD]);
 
   useEffect(() => {
     void loadRecommendations();
@@ -164,6 +164,22 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     return Math.max(0, response.totalEstimateUSD - ownedSubtotal);
   }, [response, flatItems, ownedItemIds]);
 
+  const budget = params.budgetUSD === undefined ? null : budgetStatus(adjustedTotal, params.budgetUSD);
+  const budgetTitle = budget?.status === 'over' ? 'A savings goal, not a plan within your budget'
+    : budget?.status === 'stretch' ? 'A little above your target, within your 15% limit'
+    : 'Your setup fits your budget';
+  const budgetCard = budget && !loading && !error ? <View style={[styles.budgetCard, budget.status === 'over' && { backgroundColor: '#FFF0DF' }]}>
+    <Text style={styles.budgetTitle}>{budgetTitle}</Text>
+    <Text style={styles.budgetCopy}>Your target: ${params.budgetUSD.toFixed(2)} · Maximum estimate: ${budget.maximumUSD.toFixed(2)}</Text>
+    <Text style={styles.budgetCopy}>{budget.status === 'over'
+      ? `The lowest-cost complete setup in our catalog is $${adjustedTotal.toFixed(2)} for the gear you still need. Save $${budget.gapUSD.toFixed(2)} more than your target, or borrow gear and mark it as owned below.`
+      : budget.status === 'stretch'
+      ? `This estimate is $${budget.gapUSD.toFixed(2)} above your target. Borrowing gear could bring it down further.`
+      : `You’re $${Math.max(0, params.budgetUSD - adjustedTotal).toFixed(2)} below your target. No need to spend the rest.`}</Text>
+    <Text style={styles.budgetNote}>Estimates exclude tax, shipping, licenses, and boat or wading equipment. Check retailer prices before buying.</Text>
+    <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Budget', { selectedSpecies: params.selectedSpecies, ownedGroups: [...ownedGroupsParam, ...flatItems.filter(item => ownedItemIds[item.id]).map(item => item.groupLabel)], hasGear: true, budgetUSD: params.budgetUSD })}><Text style={styles.editBudget}>Change my budget</Text></TouchableOpacity>
+  </View> : null;
+
   const handleToggleOwned = useCallback((id: string) => {
     setOwnedItemIds((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
@@ -182,22 +198,29 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
     item.prices.find((p) => p.retailer === slug);
 
   const renderGearCard = ({ item }: { item: GearItem & { groupLabel: string } }) => {
-    const image = item.prices.find((p) => p.image)?.image ?? placeholderImg;
+    const image = item.prices.find((p) => p.image)?.image;
     const isOwned = !!ownedItemIds[item.id];
     const hasLivePrice = item.prices.some((p) => p.priceUSD != null);
 
     return (
-      <View style={styles.card}>
-        <Image source={{ uri: image }} style={styles.image} />
-        <View style={styles.cardBody}>
-          <Text style={styles.gearName}>{item.groupLabel}: {item.name}</Text>
+      <View style={[styles.card, compact && { flexDirection: 'column' }]}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.image} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="fish-outline" size={30} color={colors.brand} />
+          </View>
+        )}
+        <View style={[styles.cardBody, compact && { marginLeft: 0, marginTop: 12 }]}>
+          <View style={styles.cardHeading}>
+            <View style={styles.groupPill}><Text style={styles.groupPillText}>{item.groupLabel}</Text></View>
+            <Text style={styles.price}>{hasLivePrice ? 'From ' : 'Est. '}${item.estPriceUSD.toFixed(2)}</Text>
+          </View>
+          <Text style={styles.gearName}>{item.name}</Text>
           <Text style={styles.description}>{item.description}</Text>
           {item.rationale ? (
             <Text style={styles.rationale}>{item.rationale}</Text>
           ) : null}
-          <Text style={styles.price}>
-            {hasLivePrice ? 'From ' : 'Est. '}${item.estPriceUSD.toFixed(2)}
-          </Text>
           {!hasLivePrice ? (
             <Text style={styles.priceHint}>Tap a retailer below to check current price</Text>
           ) : null}
@@ -218,8 +241,11 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
                   onPress={() => handleOpenUrl(offer.url)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.retailerBtnLabel}>{label}</Text>
-                  <Text style={styles.retailerBtnSublabel}>{sublabel}</Text>
+                  <View>
+                    <Text style={styles.retailerBtnLabel}>{label}</Text>
+                    <Text style={styles.retailerBtnSublabel}>{sublabel}</Text>
+                  </View>
+                  <Ionicons name="open-outline" size={15} color={colors.brand} />
                 </TouchableOpacity>
               );
             })}
@@ -241,14 +267,18 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <AuroraBackground />
-      <Text style={styles.title}>
-        Recommended Gear for {speciesNorm.display} ({methodNorm.display})
-      </Text>
-      <Text style={styles.subtitle}>Best Results</Text>
+      <View style={styles.headerCard}>
+        <View style={styles.resultBadge}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.brand} />
+          <Text style={styles.resultBadgeText}>YOUR GEAR PLAN</Text>
+        </View>
+        <Text style={styles.title}>{speciesNorm.display} setup</Text>
+        <Text style={styles.subtitle}>{methodNorm.display} · {params.budgetUSD === undefined ? 'Best-value picks' : 'Starter-budget picks'} · {flatItems.length} categories</Text>
+      </View>
 
       {loading ? (
         <View style={styles.statusContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.brand} />
           <Text style={styles.statusText}>Finding the best results for {speciesNorm.display}…</Text>
         </View>
       ) : error ? (
@@ -261,14 +291,15 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
       ) : flatItems.length === 0 ? (
         <View style={styles.statusContainer}>
-          <Text style={styles.errorTitle}>No recommendations yet</Text>
+          {budgetCard}
+          <Text style={styles.errorTitle}>{ownedGroupsParam.length ? "You’re ready with the gear you own" : "No recommendations yet"}</Text>
           <Text style={styles.statusText}>
-            We don&apos;t have curated gear for {speciesNorm.display} ({methodNorm.display}) yet.
-            Try a different combination.
+            {ownedGroupsParam.length ? "No additional gear from this catalog is needed. Your estimated gear cost is $0." : `We don’t have curated gear for ${speciesNorm.display} (${methodNorm.display}) yet. Try a different combination.`}
           </Text>
         </View>
       ) : (
         <FlatList
+          ListHeaderComponent={budgetCard}
           data={flatItems}
           renderItem={renderGearCard}
           keyExtractor={(item) => item.id}
@@ -278,36 +309,69 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         />
       )}
 
-      <View style={styles.footer}>
-        <Text style={styles.totalText}>Estimated Total: ${adjustedTotal.toFixed(2)}</Text>
+      {!loading && !error ? <View style={[styles.footer, compact && { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
+        <View>
+          <Text style={styles.totalLabel}>{budget?.status === 'over' ? 'STARTER SAVINGS GOAL' : 'ESTIMATED GEAR TOTAL'}</Text>
+          <Text style={styles.totalText}>${adjustedTotal.toFixed(2)}</Text>
+        </View>
         <TouchableOpacity
           style={styles.continueBtn}
-          onPress={() => navigation.navigate('Welcome')}
+          onPress={() => navigation.reset({ index: 1, routes: [{ name: 'Welcome' }, { name: 'SpeciesSelector' }] })}
         >
-          <Text style={styles.continueText}>Start Over</Text>
+          <Ionicons name="refresh" size={17} color="#fff" />
+          <Text style={styles.continueText}>Build another plan</Text>
         </TouchableOpacity>
-      </View>
+      </View> : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  budgetCard: { backgroundColor: colors.brandSoft, borderRadius: 16, padding: 18, marginBottom: 18 },
+  budgetTitle: { color: colors.ink, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  budgetCopy: { color: colors.ink, fontSize: 14, lineHeight: 21, marginBottom: 8 },
+  budgetNote: { color: colors.inkMuted, fontSize: 12, lineHeight: 18 },
+  editBudget: { color: colors.brand, fontWeight: '700', paddingTop: 14, paddingBottom: 4 },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: Platform.OS === 'android' ? 40 : 60,
-    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 20 : 26,
+    paddingHorizontal: 20,
+    width: '100%',
+    maxWidth: 920,
+    alignSelf: 'center',
+  },
+  headerCard: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  resultBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.brandSoft,
+    borderRadius: 99,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    marginBottom: 11,
+  },
+  resultBadgeText: {
+    fontSize: 10,
+    letterSpacing: 1.3,
+    fontWeight: '800',
+    color: colors.brandDark,
+    marginLeft: 6,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '800',
+    color: colors.ink,
     marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563eb',
+    color: colors.inkMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -331,7 +395,7 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     marginTop: 16,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.brand,
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 8,
@@ -343,46 +407,71 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadows.card,
   },
   cardBody: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
+  },
+  cardHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  groupPill: {
+    backgroundColor: colors.brandSoft,
+    borderRadius: 99,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+  },
+  groupPillText: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontWeight: '800',
+    color: colors.brandDark,
   },
   image: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    backgroundColor: '#dee2e6',
+    borderRadius: 14,
+    backgroundColor: colors.brandSoft,
+  },
+  imagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   gearName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 2,
+    fontWeight: '800',
+    color: colors.ink,
+    marginBottom: 5,
   },
   description: {
     fontSize: 13,
-    color: '#6c757d',
+    color: colors.inkMuted,
     marginBottom: 4,
   },
   rationale: {
     fontSize: 12,
     fontStyle: 'italic',
-    color: '#2563eb',
+    color: colors.brand,
     marginBottom: 4,
   },
   price: {
     fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '800',
+    color: colors.ink,
   },
   priceHint: {
     fontSize: 12,
@@ -395,24 +484,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   retailerBtn: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#cbd5e1',
+    backgroundColor: colors.canvas,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     width: '48%',
     marginBottom: 6,
     marginRight: '2%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   retailerBtnLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.ink,
   },
   retailerBtnSublabel: {
     fontSize: 11,
-    color: '#2563eb',
+    color: colors.brand,
     marginTop: 2,
   },
   checkboxRow: {
@@ -425,17 +517,15 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 13,
-    color: '#495057',
+    color: colors.inkMuted,
   },
   footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flexShrink: 0,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#dee2e6',
-    padding: 16,
+    borderTopColor: colors.border,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -446,26 +536,36 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   totalText: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.ink,
+  },
+  totalLabel: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    fontWeight: '800',
+    color: colors.inkMuted,
+    marginBottom: 2,
   },
   continueBtn: {
-    backgroundColor: '#007bff',
-    borderRadius: 8,
+    backgroundColor: colors.brand,
+    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   continueText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    marginLeft: 7,
   },
   listContainer: {
     flex: 1,
   },
   listContent: {
-    paddingBottom: 120,
+    paddingBottom: 24,
     paddingTop: 10,
   },
 });

@@ -1,12 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
+import { colors } from '../theme';
 
 const AuroraBackground = () => {
   const drift = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0.8)).current;
+  const pulse = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
     const driftLoop = Animated.loop(
@@ -29,13 +27,13 @@ const AuroraBackground = () => {
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 0.55,
+          toValue: 0.25,
           duration: 4000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
-          toValue: 0.85,
+          toValue: 0.5,
           duration: 4000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
@@ -54,100 +52,74 @@ const AuroraBackground = () => {
 
   const driftX1 = drift.interpolate({
     inputRange: [0, 1],
-    outputRange: [-20, 20],
+    outputRange: [-14, 14],
   });
   const driftY1 = drift.interpolate({
     inputRange: [0, 1],
-    outputRange: [-10, 15],
+    outputRange: [-8, 10],
   });
   const driftX2 = drift.interpolate({
     inputRange: [0, 1],
-    outputRange: [20, -20],
+    outputRange: [12, -12],
   });
   const driftY2 = drift.interpolate({
     inputRange: [0, 1],
-    outputRange: [10, -15],
+    outputRange: [8, -10],
   });
 
   return (
     <View pointerEvents="none" style={styles.container}>
-      <View style={styles.baseGradient} />
-      <View style={styles.topMintLayer} />
-      <View style={styles.bottomCyanLayer} />
+      <View style={styles.base} />
 
       <Animated.View
         style={[
-          styles.fishWrap,
-          styles.fishOne,
+          styles.orb,
+          styles.orbOne,
           { transform: [{ translateX: driftX1 }, { translateY: driftY1 }] },
         ]}
-      >
-        <AnimatedIonicons name="fish" size={110} color="rgba(6, 95, 70, 0.52)" />
-      </Animated.View>
+      />
       <Animated.View
         style={[
-          styles.fishWrap,
-          styles.fishTwo,
+          styles.orb,
+          styles.orbTwo,
           { transform: [{ translateX: driftX2 }, { translateY: driftY2 }] },
         ]}
-      >
-        <AnimatedIonicons name="fish" size={120} color="rgba(4, 120, 87, 0.5)" />
-      </Animated.View>
-      <Animated.View
-        style={[
-          styles.fishWrap,
-          styles.fishThree,
-          { transform: [{ translateX: driftX1 }, { translateY: driftY2 }] },
-        ]}
-      >
-        <AnimatedIonicons name="fish" size={95} color="rgba(20, 83, 45, 0.55)" />
-      </Animated.View>
+      />
 
-      <Animated.View style={[styles.vignette, { opacity: pulse }]} />
+      <Animated.View style={[styles.glow, { opacity: pulse }]} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
   },
-  baseGradient: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f5f5f5',
+  base: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.canvas,
   },
-  topMintLayer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 255, 136, 0.22)',
-  },
-  bottomCyanLayer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(97, 239, 255, 0.2)',
-    transform: [{ translateY: 120 }],
-  },
-  fishWrap: {
+  orb: {
     position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 999,
   },
-  fishOne: {
-    left: -20,
-    top: 20,
-    transform: [{ rotate: '-8deg' }],
+  orbOne: {
+    width: 360,
+    height: 360,
+    right: -160,
+    top: -170,
+    backgroundColor: 'rgba(75, 180, 162, 0.14)',
   },
-  fishTwo: {
-    right: -25,
-    top: 120,
-    transform: [{ rotate: '12deg' }],
+  orbTwo: {
+    width: 280,
+    height: 280,
+    left: -150,
+    bottom: -120,
+    backgroundColor: 'rgba(242, 166, 90, 0.10)',
   },
-  fishThree: {
-    left: 70,
-    bottom: 10,
-    transform: [{ rotate: '-15deg' }],
-  },
-  vignette: {
-    ...StyleSheet.absoluteFillObject,
+  glow: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
 });

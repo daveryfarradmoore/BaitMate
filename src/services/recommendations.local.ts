@@ -21,6 +21,8 @@ import {
   SEED_SPECIES_GEAR_DATA,
 } from './seedData';
 
+import { budgetCents, cheapestItem } from '../../supabase/functions/_shared/budget';
+
 const SPECIES_SLUG_TO_NAME: Record<string, string> = SEED_SPECIES.reduce(
   (acc, s) => {
     acc[s.slug] = s.name;
@@ -45,6 +47,7 @@ function pickTierItem(
   groupName: string,
   items: typeof SEED_DEFAULT_GEAR[string],
   budgetTier: GearRecommendationRequest['budgetTier'],
+  budgetUSD?: number,
 ): GearItem | null {
   if (!items || items.length === 0) return null;
 
@@ -52,7 +55,7 @@ function pickTierItem(
   const fallback = budgetTier === 'Premium'
     ? items.find((i) => i.tag === 'Best Value')
     : items.find((i) => i.tag === 'Value Items') ?? items.find((i) => i.tag === 'Cheapest');
-  const chosen = exact ?? fallback ?? items[0];
+  const chosen = budgetUSD === undefined ? exact ?? fallback ?? items[0] : cheapestItem(items, item => item.price);
   if (!chosen) return null;
 
   const groupSlug = GROUP_NAME_TO_SLUG[groupName] ?? groupName.toLowerCase();
@@ -73,6 +76,7 @@ function pickTierItem(
 export function buildLocalRecommendation(
   req: GearRecommendationRequest,
 ): GearRecommendationResponse {
+  if (req.budgetUSD !== undefined) budgetCents(req.budgetUSD);
   const displayName = SPECIES_SLUG_TO_NAME[req.species] ?? req.species;
   const speciesGear =
     SEED_SPECIES_GEAR_DATA[displayName] ?? SEED_DEFAULT_GEAR;
@@ -86,7 +90,7 @@ export function buildLocalRecommendation(
   for (const [groupName, items] of Object.entries(speciesGear)) {
     const slug = GROUP_NAME_TO_SLUG[groupName] ?? groupName.toLowerCase();
     if (ownedSlugs.has(slug) || ownedSlugs.has(groupName.toLowerCase())) continue;
-    const picked = pickTierItem(groupName, items, req.budgetTier);
+    const picked = pickTierItem(groupName, items, req.budgetTier, req.budgetUSD);
     if (!picked) continue;
     total += picked.estPriceUSD;
     groups.push({ group: groupName, items: [picked] });

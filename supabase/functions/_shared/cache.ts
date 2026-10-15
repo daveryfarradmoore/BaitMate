@@ -26,6 +26,8 @@ export async function buildRequestHash(
     req.method.toLowerCase(),
     sortedOwned.join(','),
     req.budgetTier,
+    'budget-v1',
+    req.budgetUSD ?? 'none',
     providerSlug,
   ].join('|');
   return sha256Hex(key);

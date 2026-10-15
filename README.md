@@ -38,6 +38,19 @@ npm run ios            # requires Xcode Simulator or device
 npm run ios:sim        # opens Simulator first, then Expo iOS
 ```
 
+### Michigan fishing map
+
+The discovery map uses Mapbox on iOS, Android, and web. Add a client-side
+Mapbox public token to `.env`:
+
+```bash
+EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token
+```
+
+Because `@rnmapbox/maps` includes custom native code, test the native map with
+a development build (`npx expo run:ios` or `npx expo run:android`) rather than
+Expo Go. The web build works through Mapbox GL JS.
+
 ```bash
 npm run typecheck
 npm test
@@ -71,3 +84,22 @@ Set Edge secrets (`SUPABASE_SERVICE_ROLE_KEY`, `PRICE_PROVIDER=mock`, etc.) per 
 ## License
 
 Private project — update as needed for your portfolio.
+
+## Beginner gear budgets
+
+The guest flow is species → owned gear → budget → fishing method → recommendations.
+Enter a USD target (including $0) or use the starter catalog estimate. Numeric-budget
+requests choose the lowest-priced item in every unowned catalog category rather than
+spending up to the target. Existing callers without a budget retain tier selection.
+
+Results distinguish costs at/below the target, up to 15% above it, and an unaffordable
+starter savings goal. The 15% ceiling is rounded down to whole cents. Required catalog
+categories are never removed just to make a total fit. Ownership switches update the
+remaining cost and budget status. Estimates exclude taxes, shipping, licenses, and
+boat/wading equipment; retailer search links are not guaranteed live prices.
+
+The local demo and Supabase function use the same lowest-cost selection and budget
+validation policy. Deploy the updated `getGearRecommendations` Edge Function before
+using the feature with an existing hosted backend. Cache keys include the budget.
+The current seed catalog may lack inexpensive starter options for some species; an
+over-budget result describes this catalog, not the minimum possible cost of fishing.

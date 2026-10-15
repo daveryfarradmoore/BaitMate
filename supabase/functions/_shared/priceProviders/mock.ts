@@ -56,11 +56,15 @@ export class MockPriceProvider implements PriceProvider {
       image_url: string | null;
       in_stock: boolean | null;
       fetched_at: string | null;
-      retailers: { slug: string };
+      retailers: { slug: string } | { slug: string }[];
     };
 
     for (const row of (data ?? []) as Row[]) {
-      const slug = row.retailers.slug as CatalogRetailerSlug;
+      const retailer = Array.isArray(row.retailers)
+        ? row.retailers[0]
+        : row.retailers;
+      if (!retailer) continue;
+      const slug = retailer.slug as CatalogRetailerSlug;
       if (!CATALOG_RETAILER_SLUGS.includes(slug)) continue;
 
       const price: PriceResult = {

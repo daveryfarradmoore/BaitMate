@@ -52,6 +52,8 @@ export interface GearRecommendationRequest {
   method: string;
   ownedGroups: string[];
   budgetTier: BudgetTier;
+  /** Target spending on unowned gear, in USD. */
+  budgetUSD?: number;
 }
 
 export interface RecommendationSource {

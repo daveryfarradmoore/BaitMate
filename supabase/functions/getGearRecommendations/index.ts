@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+import { cheapestItem } from '../_shared/budget.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { log, newRequestId } from '../_shared/logger.ts';
 import { parseRequest } from '../_shared/validation.ts';
@@ -57,6 +58,7 @@ function effectiveEstPriceUSD(
   basePriceUSD: number,
 ): number {
   const live = prices
+    .filter(p => p.inStock !== false)
     .map((p) => p.priceUSD)
     .filter((v): v is number => v != null);
   if (live.length > 0) {
@@ -281,7 +283,9 @@ Deno.serve(async (req: Request) => {
   let totalEstimate = 0;
 
   for (const [groupSlug, candidates] of byGroup) {
-    const chosen = chooseTierItem(candidates, parsed.value.budgetTier);
+    const chosen = parsed.value.budgetUSD === undefined
+      ? chooseTierItem(candidates, parsed.value.budgetTier)
+      : cheapestItem(candidates, item => effectiveEstPriceUSD(item._prices, item.basePriceUSD));
     if (!chosen) continue;
     const itemPrices = chosen._prices;
     const priceUSD = effectiveEstPriceUSD(itemPrices, chosen.basePriceUSD);

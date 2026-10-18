@@ -1,3 +1,8 @@
+/**
+ * Category-level checklist for gear the user already owns or can borrow.
+ * Selected category names travel to Budget, then exclude matching catalog groups.
+ * This does not verify individual products or persist an inventory to an account.
+ */
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +32,7 @@ const GEAR_GROUPS = [
 const OwnedGearSelectionScreen = ({ navigation, route }: Props) => {
   const { selectedSpecies } = route.params;
   const [ownedGroups, setOwnedGroups] = useState<Record<string, boolean>>({});
+  // False entries remain after toggling off; pass only checked category names.
   const selected = useMemo(() => Object.keys(ownedGroups).filter((key) => ownedGroups[key]), [ownedGroups]);
 
   const toggleGroup = (group: string) => {

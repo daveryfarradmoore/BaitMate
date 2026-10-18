@@ -12,8 +12,8 @@ import { buildLocalRecommendation } from './recommendations.local';
  * configured; otherwise resolves against the in-memory mock so the demo still
  * works without a backend.
  *
- * Throws `RecommendationServiceError` on any backend error - callers should
- * surface a friendly message + retry button.
+ * Uses the starter catalog when the cloud function is unavailable. Other
+ * backend errors remain visible to callers.
  */
 export class RecommendationServiceError extends Error {
   constructor(
@@ -47,7 +47,10 @@ export async function fetchGearRecommendations(
   );
 
   if (error) {
-    const status = (error as { status?: number }).status;
+    const status = (error as { status?: number; context?: { status?: number } }).context?.status ?? (error as { status?: number }).status;
+    if (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError' || status === 404 || (status !== undefined && status >= 500)) {
+      return buildLocalRecommendation(req);
+    }
     const ctx = (error as { context?: { body?: unknown } }).context;
     const body = (ctx?.body ?? null) as RecommendationErrorBody | null;
     if (body && typeof body === 'object' && 'code' in body) {

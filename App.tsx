@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { getSupabaseClient } from './src/lib/supabase';
+import AccountScreen from './src/screens/AccountScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, StackNavigationProp as RNStackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -10,7 +13,7 @@ import MethodQuestionScreen from './src/screens/MethodQuestionScreen';
 import GearRecommendationScreen from './src/screens/GearRecommendationScreen';
 import BudgetScreen from './src/screens/BudgetScreen';
 import FishingMapScreen from './src/screens/FishingMapScreen';
-import { Platform, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Platform, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from './src/theme';
 
@@ -25,6 +28,7 @@ export type Species = {
 // Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
+  Account: undefined;
   SpeciesSelector: undefined;
   GearOwnership: { selectedSpecies: Species };
   OwnedGearSelection: { selectedSpecies: Species };
@@ -40,10 +44,31 @@ export type StackRouteProp<T extends keyof RootStackParamList> = RouteProp<RootS
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App = () => {
+  const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    // Subscribe before restoring storage so a newer login/logout event wins
+    // over an older getSession result. See docs/CODEBASE_GUIDE.md.
+    const client = getSupabaseClient();
+    if (!client) { setReady(true); return; }
+    let active = true;
+    let changed = false;
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, next) => {
+      changed = true;
+      if (active) { setSession(next); setReady(true); }
+    });
+    client.auth.getSession().then(({ data, error }) => {
+      if (active && !changed) { setSession(error ? null : data.session); setReady(true); }
+    }).catch(() => { if (active) setReady(true); });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
+  if (!ready) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.canvas }}><ActivityIndicator accessibilityLabel="Restoring your account" color={colors.brand} /></View>;
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Welcome"
+        // Reset navigation history when authentication status changes.
+        key={session ? 'signed-in' : 'guest'}
+        initialRouteName={session ? 'SpeciesSelector' : 'Welcome'}
         screenOptions={({ navigation }) => ({
           headerStyle: {
             backgroundColor: colors.canvas,
@@ -56,7 +81,7 @@ const App = () => {
             fontWeight: '700',
           },
           headerBackTitleVisible: false,
-          headerRight: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Explore fishing map" onPress={() => navigation.navigate('FishingMap')} style={{ padding: 12, marginRight: 12 }}><Ionicons name="map-outline" size={22} color={colors.brand} /></TouchableOpacity>,
+          headerRight: () => <View style={{ flexDirection: 'row' }}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Your account" onPress={() => navigation.navigate('Account')} style={{ padding: 12 }}><Ionicons name="person-circle-outline" size={24} color={colors.brand} /></TouchableOpacity><TouchableOpacity accessibilityRole="button" accessibilityLabel="Explore fishing map" onPress={() => navigation.navigate('FishingMap')} style={{ padding: 12, marginRight: 12 }}><Ionicons name="map-outline" size={22} color={colors.brand} /></TouchableOpacity></View>,
           // Stack's web CardSheet normally expands for document scrolling,
           // but Expo locks the body. Keep screens bounded so ScrollView and
           // FlatList own scrolling, including when the window is resized.
@@ -66,6 +91,7 @@ const App = () => {
           },
         })}
       >
+        <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Your Account' }} />
         <Stack.Screen 
           name="Welcome" 
           component={WelcomeScreen} 

@@ -1,10 +1,14 @@
 # BaitMate
 
+**New to this codebase? Start with [the codebase guide](docs/CODEBASE_GUIDE.md)**
+for the current user flow, authentication/session lifecycle, recommendation
+fallbacks, kit trial, setup, limitations, and where to change each feature.
+
 BaitMate is a mobile app (Expo / React Native) that helps anglers get personalized fishing gear recommendations: pick a species, say what you already own, choose how you fish, and see curated gear with prices and buy links.
 
 ## Architecture (short)
 
-- **App:** Stack navigator (`Welcome` → species → gear ownership → method → recommendations). Business logic in [`src/services/`](src/services/) (auth + recommendations).
+- **App:** Stack navigator (`Welcome` → species → gear ownership → budget → access popup → recommendations). Business logic in [`src/services/`](src/services/) (auth + recommendations).
 - **Backend:** Supabase Postgres (catalog + mock prices + response cache) and one Edge Function, `getGearRecommendations`, with pluggable price providers (mock / Amazon / Walmart / hybrid).
 - **Offline:** If Supabase env vars are missing, the app uses the same API shape via an in-memory mirror of seed data.
 
@@ -21,8 +25,8 @@ flowchart LR
 
 | Area | Status |
 |------|--------|
-| UI flow, auth (email/password), guest mode | Working |
-| Recommendations via Edge Function + mock prices | Working |
+| Email/password forms, session restoration, guest mode | Implemented; successful live login still needs verification |
+| Recommendations via Edge Function + mock prices | Requires backend deployment; local fallback available |
 | Offline demo without Supabase | Working |
 | Caching, validation, structured logging | Working |
 | Amazon / Walmart live pricing | Needs affiliate API keys in production |
@@ -32,7 +36,7 @@ flowchart LR
 
 ```bash
 npm install
-cp .env.example .env   # EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY
+# Create a local .env with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
 npm start
 npm run ios            # requires Xcode Simulator or device
 npm run ios:sim        # opens Simulator first, then Expo iOS
@@ -65,7 +69,9 @@ supabase db reset
 supabase functions serve getGearRecommendations --no-verify-jwt
 ```
 
-Set Edge secrets (`SUPABASE_SERVICE_ROLE_KEY`, `PRICE_PROVIDER=mock`, etc.) per [`.env.example`](.env.example). Never commit `.env` or service role keys.
+Set server-only Edge secrets (such as `SUPABASE_SERVICE_ROLE_KEY` and
+`PRICE_PROVIDER=mock`) in Supabase separately from the client settings in your
+local `.env`. Never commit `.env` or service role keys.
 
 ## Project layout
 
@@ -87,7 +93,7 @@ Private project — update as needed for your portfolio.
 
 ## Beginner gear budgets
 
-The guest flow is species → owned gear → budget → fishing method → recommendations.
+The guest flow is species → owned gear → budget → species access popup → recommendations.
 Enter a USD target (including $0) or use the starter catalog estimate. Numeric-budget
 requests choose the lowest-priced item in every unowned catalog category rather than
 spending up to the target. Existing callers without a budget retain tier selection.

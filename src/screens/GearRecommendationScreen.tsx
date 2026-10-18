@@ -1,3 +1,10 @@
+/**
+ * Displays the setup produced from species, access method, owned gear and budget.
+ * The service handles cloud/local selection; this screen handles loading/retry,
+ * retailer links and ownership toggles that reduce the remaining estimated total.
+ * The packaged-kit trial is a separate purchase alternative, not an added cost.
+ * Prices may be catalog estimates, and ownership toggles are not saved remotely.
+ */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -33,6 +40,7 @@ import {
   type CatalogRetailerSlug,
 } from '../lib/retailerSearchUrls';
 import { budgetStatus } from '../../supabase/functions/_shared/budget';
+import BudgetKitTrial from '../components/BudgetKitTrial';
 import { colors, shadows } from '../theme';
 
 type GearRecommendationScreenRouteProp = RouteProp<
@@ -156,6 +164,8 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [response]);
 
   const adjustedTotal = useMemo(() => {
+    // Subtract only newly marked items; previously owned categories were already
+    // excluded by the service, so subtracting those again would understate costs.
     if (!response) return 0;
     const ownedSubtotal = flatItems.reduce(
       (sum, item) => (ownedItemIds[item.id] ? sum + item.estPriceUSD : sum),
@@ -291,6 +301,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
       ) : flatItems.length === 0 ? (
         <View style={styles.statusContainer}>
+          <BudgetKitTrial species={speciesNorm.slug} budget={params.budgetUSD} ownedCount={ownedGroupsParam.length} />
           {budgetCard}
           <Text style={styles.errorTitle}>{ownedGroupsParam.length ? "You’re ready with the gear you own" : "No recommendations yet"}</Text>
           <Text style={styles.statusText}>
@@ -299,7 +310,7 @@ const GearRecommendationScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
       ) : (
         <FlatList
-          ListHeaderComponent={budgetCard}
+          ListHeaderComponent={<><BudgetKitTrial species={speciesNorm.slug} budget={params.budgetUSD} ownedCount={ownedGroupsParam.length} />{budgetCard}</>}
           data={flatItems}
           renderItem={renderGearCard}
           keyExtractor={(item) => item.id}

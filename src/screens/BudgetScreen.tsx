@@ -1,3 +1,9 @@
+/**
+ * Collects the budget for unowned gear and previews a local catalog estimate.
+ * The access popup recommends shore/dock first, or equipped and affordable wading
+ * for river species. Continues directly to GearRecommendation with those choices.
+ * State is local to this screen; it is not saved to the user's Supabase account.
+ */
 import React, { useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { StackNavigationProp, StackRouteProp } from '../../App';
@@ -11,11 +17,14 @@ export default function BudgetScreen({ navigation, route }: { navigation: StackN
   const { selectedSpecies, ownedGroups, hasGear } = route.params;
   const [amount, setAmount] = useState(route.params.budgetUSD?.toString() ?? '');
   const [showAccess, setShowAccess] = useState(false);
+  // Access is a species-specific popup, replacing the legacy MethodQuestion
+  // route in this flow. Wading requires owned waders and an affordable tackle plan.
   const [access, setAccess] = useState('shore');
   const [hasWaders, setHasWaders] = useState<boolean | null>(null);
   const riverSpecies = /salmon|trout|steelhead/i.test(selectedSpecies.name);
   const panfish = /bluegill|blue gill|sunfish|crappie|perch/i.test(selectedSpecies.name);
   const wadingEstimate = buildLocalRecommendation({ species: selectedSpecies.id, method: 'wading', ownedGroups, budgetTier: 'Best Value', budgetUSD: 0 }).totalEstimateUSD;
+  // Keep text while editing: Number('') is zero, but an empty field is not valid.
   const numeric = Number(amount);
   const valid = /^\d+(\.\d{1,2})?$/.test(amount) && numeric <= 100000;
   const wadingFits = valid && wadingEstimate <= numeric;

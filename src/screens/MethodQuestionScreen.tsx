@@ -1,3 +1,9 @@
+/**
+ * Legacy standalone method picker, retained as a registered navigation route.
+ * The main flow now uses BudgetScreen's species-specific access popup instead.
+ * This older route still offers boat access and has no wader-ownership check;
+ * do not route the beginner flow here without reconciling those differences.
+ */
 import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

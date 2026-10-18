@@ -1,3 +1,10 @@
+/**
+ * Entry screen for email/password login, registration, reset-email requests and
+ * guest planning. Form validation is local; Supabase performs authentication.
+ * App.tsx listens for sessions and restores them across app launches.
+ * Signup may require email confirmation before a session exists. Reset-email
+ * requests alone do not implement a complete recovery/new-password flow.
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -9,7 +16,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Keyboard,
   useWindowDimensions,
@@ -39,6 +45,11 @@ const WelcomeScreen = ({ navigation }: Props) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  // Native Alert.alert is a no-op in react-native-web. Keep feedback in the form.
+  const Alert = {
+    alert: (title: string, message: string, _buttons?: unknown[]) => setNotice(`${title}: ${message}`),
+  };
 
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -61,6 +72,7 @@ const WelcomeScreen = ({ navigation }: Props) => {
 
   const handleSubmit = async () => {
     if (loading) return;
+    setNotice('');
 
     const err = validateForm();
     if (err) {
@@ -145,7 +157,9 @@ const WelcomeScreen = ({ navigation }: Props) => {
   };
 
   const switchMode = (next: AuthMode) => {
+    // Switching tabs changes the form only; the primary button submits it.
     setMode(next);
+    setNotice('');
     if (next === 'signin') setConfirmPassword('');
   };
 
@@ -227,7 +241,8 @@ const WelcomeScreen = ({ navigation }: Props) => {
         </View>
       ) : null}
 
-      <TouchableOpacity style={[styles.primaryButton, loading && styles.disabledButton]} onPress={handleSubmit} disabled={loading}>
+      {notice ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: colors.ink, backgroundColor: colors.brandSoft, padding: 14, borderRadius: 12, marginBottom: 14, lineHeight: 22 }}>{notice}</Text> : null}
+      <TouchableOpacity accessibilityRole="button" style={[styles.primaryButton, loading && styles.disabledButton]} onPress={handleSubmit} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : (
           <>
             <Text style={styles.primaryButtonText}>{mode === 'signin' ? 'Log in' : 'Create account'}</Text>

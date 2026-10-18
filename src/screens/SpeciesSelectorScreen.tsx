@@ -1,3 +1,8 @@
+/**
+ * First planning step: browse/search species from the shared seed catalog.
+ * Uses catalog slugs as IDs so later recommendation requests match the backend.
+ * The selected species is passed through navigation rather than saved remotely.
+ */
 import React, { useState } from 'react';
 import {
   TextInput,

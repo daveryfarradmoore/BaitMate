@@ -1,3 +1,8 @@
+/**
+ * Branches the setup flow based on whether the user owns fishing equipment.
+ * Yes opens the category checklist; No sends an empty ownedGroups list to Budget.
+ * A null answer means no choice yet, preventing accidental continuation.
+ */
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +30,7 @@ const GearOwnershipScreen = ({ navigation, route }: Props) => {
         // User has gear - select which groups they own
         navigation.navigate('OwnedGearSelection', { selectedSpecies });
       } else {
-        // User needs gear - go to method questions for recommendations
+        // Starting from scratch: budget estimates must include every category.
         navigation.navigate('Budget', {
           selectedSpecies,
           hasGear,

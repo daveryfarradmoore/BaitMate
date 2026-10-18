@@ -1,3 +1,9 @@
+/**
+ * Michigan discovery map: filters curated fishing spots by species and lets the
+ * user select a destination for Apple Maps. Spot data is not live catch prediction.
+ * Mapbox needs a public token; native rendering requires a development build.
+ * Destination selection does not establish public access or safe water conditions.
+ */
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
